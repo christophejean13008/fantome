@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Le Fantôme Effaceur</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Caveat:wght@400;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── MODE CONFIGURATION (par défaut) ── */
+    body {
+      background: #0d1b2a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Lora', Georgia, serif;
+      color: #e8dcc8;
+      padding: 30px 20px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 50% 30%, rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 20% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.35) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    h1 {
+      font-family: 'Caveat', cursive;
+      font-size: 2rem;
+      color: #a8c5da;
+      margin-bottom: 18px;
+      letter-spacing: 2px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 0 20px rgba(168,197,218,0.4);
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #file-input { display: none; }
+
+    #source-name {
+      font-family: 'Caveat', cursive;
+      font-size: 0.95rem;
+      color: rgba(168,197,218,0.6);
+      font-style: italic;
+    }
+
+    #editor-panel {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    #editor-panel.open { display: flex; }
+
+    #text-editor {
+      width: 100%;
+      min-height: 130px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(168,197,218,0.35);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1rem;
+      color: #e8dcc8;
+      resize: vertical;
+      outline: none;
+      line-height: 1.7;
+    }
+    #text-editor::placeholder { color: rgba(168,197,218,0.35); }
+    #text-editor:focus { border-color: rgba(168,197,218,0.7); }
+
+    .editor-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50px;
+      padding: 10px 24px;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .controls label {
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: #a8c5da;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 140px;
+      height: 4px;
+      background: rgba(168,197,218,0.3);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      background: #a8c5da;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(168,197,218,0.6);
+    }
+
+    #speed-label {
+      font-family: 'Caveat', cursive;
+      font-size: 0.95rem;
+      color: #c8dde8;
+      min-width: 75px;
+      text-align: center;
+    }
+
+    .btn {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      padding: 7px 18px;
+      border: 1px solid rgba(168,197,218,0.4);
+      border-radius: 25px;
+      background: rgba(168,197,218,0.1);
+      color: #a8c5da;
+      cursor: pointer;
+      transition: all 0.22s;
+      letter-spacing: 1px;
+    }
+    .btn:hover {
+      background: rgba(168,197,218,0.22);
+      box-shadow: 0 0 10px rgba(168,197,218,0.3);
+      transform: translateY(-1px);
+    }
+    .btn.import-btn  { border-color: rgba(130,200,140,0.5); color: #90d4a0; background: rgba(130,200,140,0.08); }
+    .btn.import-btn:hover { background: rgba(130,200,140,0.18); }
+    .btn.edit-btn    { border-color: rgba(220,190,120,0.5); color: #e8cc80; background: rgba(220,190,120,0.08); }
+    .btn.edit-btn:hover { background: rgba(220,190,120,0.18); }
+    .btn.confirm-btn { border-color: rgba(130,200,140,0.5); color: #90d4a0; background: rgba(130,200,140,0.1); }
+    .btn.cancel-btn  { border-color: rgba(200,100,100,0.4); color: #e09090; background: rgba(200,100,100,0.08); }
+    .btn.play-btn    { border-color: rgba(168,197,218,0.6); font-size: 1.1rem; padding: 9px 26px; }
+
+    /* ── MODE PLEIN ÉCRAN ── */
+    #fullscreen-view {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0d1b2a;
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 5vw;
+    }
+    #fullscreen-view.active { display: flex; }
+
+    /* Barre de contrôle flottante en bas */
+    #fs-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: rgba(13,27,42,0.85);
+      border: 1px solid rgba(168,197,218,0.2);
+      border-radius: 50px;
+      padding: 8px 22px;
+      z-index: 200;
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Texte plein écran — taille dynamique via JS */
+    #fs-text {
+      width: 100%;
+      text-align: center;
+      line-height: 1.55;
+      color: #e8dcc8;
+      font-family: 'Lora', Georgia, serif;
+      /* font-size injecté par JS */
+    }
+
+    .word {
+      display: inline;
+      transition: opacity 0.3s ease;
+    }
+    .word.erased { opacity: 0; }
+
+    /* Fantôme */
+    #ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      transform: translate(-50%, -100%);
+      transition: left 0.08s linear, top 0.08s linear;
+      filter: drop-shadow(0 0 10px rgba(200,230,255,0.9));
+      animation: float 2s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(-50%, -100%) translateY(0px); }
+      50%       { transform: translate(-50%, -100%) translateY(-7px); }
+    }
+    #ghost.eating { animation: eat 0.3s ease forwards; }
+    @keyframes eat {
+      0%   { transform: translate(-50%, -100%) scale(1); }
+      50%  { transform: translate(-50%, -100%) scale(1.5) rotate(-12deg); }
+      100% { transform: translate(-50%, -100%) scale(1); }
+    }
+
+    #finish-msg {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Caveat', cursive;
+      font-size: 3rem;
+      color: #a8c5da;
+      text-shadow: 0 0 30px rgba(168,197,218,0.6);
+      animation: fadeIn 1s ease;
+      z-index: 200;
+      text-align: center;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -55%); }
+      to   { opacity: 1; transform: translate(-50%, -50%); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>👻 Le Fantôme Effaceur</h1>
+
+  <!-- Actions -->
+  <div class="action-bar">
+    <label for="file-input" class="btn import-btn">📂 Importer (.txt)</label>
+    <input type="file" id="file-input" accept=".txt,text/plain">
+    <button class="btn edit-btn" id="edit-btn">✏️ Saisir un texte</button>
+    <button class="btn cancel-btn" id="clear-btn" style="display:none;">🗑 Supprimer le texte</button>
+    <span id="source-name">Texte par défaut</span>
+  </div>
+
+  <!-- Éditeur -->
+  <div id="editor-panel">
+    <textarea id="text-editor" placeholder="Écris ton texte ici…"></textarea>
+    <div class="editor-actions">
+      <button class="btn cancel-btn" id="cancel-btn">✖ Annuler</button>
+      <button class="btn confirm-btn" id="confirm-btn">✅ Utiliser ce texte</button>
+    </div>
+  </div>
+
+  <!-- Contrôles -->
+  <div class="controls">
+    <label for="speed">Vitesse :</label>
+    <input type="range" id="speed" min="1" max="10" value="5">
+    <span id="speed-label">Normale</span>
+    <button class="btn play-btn" id="launch-btn">▶ Lancer en plein écran</button>
+  </div>
+
+  <!-- ── VUE PLEIN ÉCRAN ── -->
+  <div id="fullscreen-view">
+    <div id="fs-text"></div>
+    <div id="finish-msg">🌙 Le fantôme a tout dévoré…</div>
+  </div>
+
+  <!-- Contrôles flottants (visibles seulement en plein écran) -->
+  <div id="fs-controls" style="display:none;">
+    <button class="btn" id="toggle-btn">⏸ Pause</button>
+    <button class="btn" id="reset-btn">↺ Recommencer</button>
+    <label for="speed-fs" style="font-family:'Caveat',cursive;color:#a8c5da;font-size:1rem;">Vitesse :</label>
+    <input type="range" id="speed-fs" min="1" max="10" value="5">
+    <span id="speed-label-fs" style="font-family:'Caveat',cursive;color:#c8dde8;font-size:0.95rem;min-width:75px;text-align:center;">Normale</span>
+    <button class="btn cancel-btn" id="exit-btn">✖ Quitter</button>
+  </div>
+
+  <!-- Fantôme SVG -->
+  <div id="ghost" style="display:none;">
+    <svg width="64" height="74" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="24" cy="22" rx="18" ry="20" fill="rgba(220,235,255,0.93)"/>
+      <rect x="6" y="22" width="36" height="22" fill="rgba(220,235,255,0.93)"/>
+      <path d="M6 44 Q10 50 14 44 Q18 50 22 44 Q26 50 30 44 Q34 50 38 44 Q42 50 42 44 L6 44Z" fill="rgba(220,235,255,0.93)"/>
+      <ellipse cx="17" cy="22" rx="4" ry="5" fill="#1a2a3a"/>
+      <ellipse cx="31" cy="22" rx="4" ry="5" fill="#1a2a3a"/>
+      <circle cx="18.5" cy="20.5" r="1.5" fill="white" opacity="0.85"/>
+      <circle cx="32.5" cy="20.5" r="1.5" fill="white" opacity="0.85"/>
+      <path d="M18 30 Q24 36 30 30" stroke="#1a2a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="24" cy="18" rx="18" ry="20" fill="rgba(180,215,255,0.12)"/>
+    </svg>
+  </div>
+
+  <script>
+    const defaultText = `Un texte est une série orale ou écrite de mots perçus comme constituant un ensemble cohérent, porteur de sens et utilisant les structures propres à une langue (conjugaisons, construction et association des phrases…)[1]. Un texte n'a pas de longueur déterminée sauf dans le cas de poèmes à forme fixe comme le sonnet ou le haïku.
+L'étude formelle des textes s'appuie sur la linguistique, qui est l'approche scientifique du langage.`;
+
+    let currentText = defaultText;
+
+    const fileInput    = document.getElementById('file-input');
+    const sourceNameEl = document.getElementById('source-name');
+    const editBtn      = document.getElementById('edit-btn');
+    const editorPanel  = document.getElementById('editor-panel');
+    const textEditor   = document.getElementById('text-editor');
+    const confirmBtn   = document.getElementById('confirm-btn');
+    const cancelBtn    = document.getElementById('cancel-btn');
+    const speedRange   = document.getElementById('speed');
+    const speedLabel   = document.getElementById('speed-label');
+    const launchBtn    = document.getElementById('launch-btn');
+    const fsView       = document.getElementById('fullscreen-view');
+    const fsText       = document.getElementById('fs-text');
+    const fsControls   = document.getElementById('fs-controls');
+    const toggleBtn    = document.getElementById('toggle-btn');
+    const resetBtn     = document.getElementById('reset-btn');
+    const exitBtn      = document.getElementById('exit-btn');
+    const ghost        = document.getElementById('ghost');
+    const finishMsg    = document.getElementById('finish-msg');
+    const clearBtn     = document.getElementById('clear-btn');
+    const speedRangeFs = document.getElementById('speed-fs');
+    const speedLabelFs = document.getElementById('speed-label-fs');
+
+    let wordSpans = [], currentIndex = 0, running = false, timer = null;
+
+    const speedLabels = ['','Très lente','Très lente','Lente','Lente','Normale','Normale','Rapide','Rapide','Très rapide','Fulgurante'];
+
+    function getDelay() { return Math.round(2000 / parseInt(speedRange.value)); }
+
+    // Calcule la plus grande font-size qui fait tenir le texte dans la fenêtre
+    function fitFontSize() {
+      const maxW = window.innerWidth * 0.9;
+      const maxH = window.innerHeight * 0.82; // laisser place aux contrôles en bas
+      let size = 14;
+      fsText.style.fontSize = size + 'px';
+      // Monte jusqu'à ce que ça déborde
+      while (size < 120) {
+        size += 2;
+        fsText.style.fontSize = size + 'px';
+        if (fsText.scrollWidth > maxW || fsText.scrollHeight > maxH) {
+          size -= 2;
+          break;
+        }
+      }
+      fsText.style.fontSize = size + 'px';
+    }
+
+    function buildFsText() {
+      fsText.innerHTML = '';
+      wordSpans = [];
+      const lines = currentText.split(/\n/);
+      lines.forEach((line, lineIdx) => {
+        line.split(/(\s+)/).forEach(token => {
+          if (token === '') return;
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.textContent = token;
+          fsText.appendChild(span);
+          if (token.trim() !== '') wordSpans.push(span);
+        });
+        if (lineIdx < lines.length - 1) fsText.appendChild(document.createElement('br'));
+      });
+      fitFontSize();
+    }
+
+    function moveGhostToWord(span, cb) {
+      const r = span.getBoundingClientRect();
+      ghost.style.left = (r.left + r.width / 2) + 'px';
+      ghost.style.top  = r.top + 'px';
+      setTimeout(cb, getDelay() * 0.6);
+    }
+
+    function eatWord(span) {
+      ghost.classList.remove('eating');
+      void ghost.offsetWidth;
+      ghost.classList.add('eating');
+      span.classList.add('erased');
+    }
+
+    function step() {
+      if (!running) return;
+      if (currentIndex >= wordSpans.length) {
+        ghost.style.display = 'none';
+        finishMsg.style.display = 'block';
+        running = false;
+        toggleBtn.textContent = '▶ Rejouer';
+        return;
+      }
+      ghost.style.display = 'block';
+      moveGhostToWord(wordSpans[currentIndex], () => {
+        eatWord(wordSpans[currentIndex++]);
+        timer = setTimeout(step, getDelay() * 0.4);
+      });
+    }
+
+    function start() {
+      if (currentIndex >= wordSpans.length) resetAnim();
+      running = true;
+      toggleBtn.textContent = '⏸ Pause';
+      step();
+    }
+
+    function pause() {
+      running = false;
+      clearTimeout(timer);
+      toggleBtn.textContent = '▶ Reprendre';
+    }
+
+    function resetAnim() {
+      running = false;
+      clearTimeout(timer);
+      currentIndex = 0;
+      ghost.style.display = 'none';
+      finishMsg.style.display = 'none';
+      toggleBtn.textContent = '⏸ Pause';
+      buildFsText();
+    }
+
+    function enterFullscreen() {
+      buildFsText();
+      fsView.classList.add('active');
+      fsControls.style.display = 'flex';
+      // Demander le vrai plein écran navigateur si possible
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      start();
+    }
+
+    function exitFullscreen() {
+      pause();
+      ghost.style.display = 'none';
+      finishMsg.style.display = 'none';
+      fsView.classList.remove('active');
+      fsControls.style.display = 'none';
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function loadText(text, label) {
+      currentText = text.trim();
+      sourceNameEl.textContent = label;
+      clearBtn.style.display = 'inline-block';
+    }
+
+    function clearText() {
+      currentText = defaultText;
+      sourceNameEl.textContent = 'Texte par défaut';
+      clearBtn.style.display = 'none';
+    }
+
+    // Import .txt
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        loadText(ev.target.result, '📄 ' + file.name);
+        fileInput.value = '';
+      };
+      reader.onerror = () => { sourceNameEl.textContent = '⚠ Erreur'; fileInput.value = ''; };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    // Éditeur
+    editBtn.addEventListener('click', () => {
+      textEditor.value = '';
+      editorPanel.classList.add('open');
+      textEditor.focus();
+    });
+    confirmBtn.addEventListener('click', () => {
+      const txt = textEditor.value.trim();
+      if (!txt) return;
+      editorPanel.classList.remove('open');
+      loadText(txt, '✏️ Texte saisi');
+    });
+    cancelBtn.addEventListener('click', () => editorPanel.classList.remove('open'));
+
+    // Lancement
+    clearBtn.addEventListener('click', clearText);
+    launchBtn.addEventListener('click', enterFullscreen);
+    exitBtn.addEventListener('click', exitFullscreen);
+    toggleBtn.addEventListener('click', () => { running ? pause() : start(); });
+    resetBtn.addEventListener('click', resetAnim);
+
+    speedRange.addEventListener('input', () => {
+      const v = parseInt(speedRange.value);
+      speedLabel.textContent   = speedLabels[v];
+      speedRangeFs.value       = v;
+      speedLabelFs.textContent = speedLabels[v];
+    });
+    speedRangeFs.addEventListener('input', () => {
+      const v = parseInt(speedRangeFs.value);
+      speedLabelFs.textContent = speedLabels[v];
+      speedRange.value         = v;
+      speedLabel.textContent   = speedLabels[v];
+    });
+
+    // Recalculer la taille si la fenêtre change
+    window.addEventListener('resize', () => {
+      if (fsView.classList.contains('active')) fitFontSize();
+    });
+
+    speedLabel.textContent = speedLabels[parseInt(speedRange.value)];
+  </script>
+</body>
+</html>
