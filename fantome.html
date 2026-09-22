@@ -550,7 +550,7 @@ function diviserSyllabe(mot){if(mot.length<=1)return[mot,""];var{cons,grp}=getSo
 function lancer(){pool=genItems();if(!pool.length)return;tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;showView('pl-exercice');if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});nextEleve();}
 function nextEleve(){Anim.stop();if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
 function renderHeader(){document.getElementById("ex-prenom").textContent="👤 "+eleveEnCours;lireNom(eleveEnCours);var dots=document.getElementById("tour-dots");dots.innerHTML="";eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};document.getElementById("ex-meta").innerHTML="Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");}
-function afficherItem(){var item=pool[Math.floor(Math.random()*pool.length)];if(mode===5&&!plAuto){Anim.run(animType,item,animSpeed);return;}if(mode===5&&plAuto)Anim.stop();var el=document.getElementById("syllabe");el.classList.add("flash-out");setTimeout(()=>{el.textContent=item;el.classList.remove("flash-out");ajusterTaille(el,item);},130);}
+function afficherItem(){if(plAuto)return;var item=pool[Math.floor(Math.random()*pool.length)];if(mode===5){Anim.run(animType,item,animSpeed);return;}var el=document.getElementById("syllabe");el.classList.add("flash-out");setTimeout(()=>{el.textContent=item;el.classList.remove("flash-out");ajusterTaille(el,item);},130);}
 function ajusterTaille(el,txt){var len=txt.length,vw=len<=1?38:len<=2?30:len<=3?22:len<=5?16:len<=7?12:9;el.style.fontSize=vw+"vw";var maxH=window.innerHeight*.52;while(el.offsetHeight>maxH&&vw>5){vw--;el.style.fontSize=vw+"vw";}}
 function repondre(b){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);var fe=document.getElementById("flash-emoji");fe.textContent=b?"⭐":"💪";fe.classList.add("show");setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);}
 function passerEleve(){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);nextEleve();}
@@ -560,11 +560,11 @@ const Anim={
   _raf:null,_touts:[],_extra:[],
   stop(){if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}this._touts.forEach(clearTimeout);this._touts=[];this._extra.forEach(el=>{if(el.parentNode)el.parentNode.removeChild(el);});this._extra=[];var syl=document.getElementById("syllabe");syl.style.cssText="";document.getElementById("ex-center").classList.remove("jeu-actif");},
   _t(fn,ms){var t=setTimeout(fn,ms);this._touts.push(t);return t;},
-  run(type,mot,speed){this.stop();document.getElementById("ex-center").classList.add("jeu-actif");this[type](mot,speed);},
+  run(type,mot,speed,onDone){this.stop();document.getElementById("ex-center").classList.add("jeu-actif");this[type](mot,speed,onDone);},freeze(){if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}this._touts.forEach(clearTimeout);this._touts=[];var syl=document.getElementById("syllabe");syl.style.transition="none";},
   rebond(mot,speed){var syl=document.getElementById("syllabe");syl.textContent=mot;var sz=mot.length<=2?20:mot.length<=4?15:11;syl.style.fontSize=sz+"vw";syl.style.transition="none";syl.style.color="#fff";var x=15,y=15,spd=.06+(speed-1)*.08,vx=spd*(Math.random()>.5?1:-1),vy=spd*.75*(Math.random()>.5?1:-1);var frame=()=>{x+=vx;y+=vy;if(x>=78){x=78;vx=-Math.abs(vx);}if(x<=0){x=0;vx=Math.abs(vx);}if(y>=72){y=72;vy=-Math.abs(vy);}if(y<=0){y=0;vy=Math.abs(vy);}syl.style.left=x+"%";syl.style.top=y+"%";this._raf=requestAnimationFrame(frame);};syl.style.left=x+"%";syl.style.top=y+"%";this._raf=requestAnimationFrame(frame);},
   balade(mot,speed){var syl=document.getElementById("syllabe");syl.textContent=mot;var sz=mot.length<=2?22:mot.length<=4?17:13,dur=1.2/speed;syl.style.fontSize=sz+"vw";syl.style.transition="left "+dur+"s cubic-bezier(.4,0,.2,1),top "+dur+"s cubic-bezier(.4,0,.2,1)";syl.style.color="#fff";syl.style.left="35%";syl.style.top="40%";var ms=Math.round(2800/speed),move=()=>{syl.style.left=(4+Math.random()*74)+"%";syl.style.top=(5+Math.random()*68)+"%";this._touts.push(setTimeout(move,ms));};this._t(move,400);},
-  lettres(mot,speed){var syl=document.getElementById("syllabe"),sz=mot.length<=2?30:mot.length<=4?23:17;syl.style.fontSize=sz+"vw";syl.style.position="absolute";syl.style.left="50%";syl.style.top="50%";syl.style.transform="translate(-50%,-50%)";syl.style.transition="none";syl.style.color="#fff";syl.textContent="";var chars=[...mot],delay=Math.round(750/speed),i=0;var showNext=()=>{i++;syl.textContent=mot.slice(0,i);if(i<chars.length)this._t(showNext,delay);};this._t(showNext,300);},
-  assemble(mot,speed){var syl=document.getElementById("syllabe");syl.style.display="none";var center=document.getElementById("ex-center"),duree=Math.round(1300/speed),parts=diviserSyllabe(mot),p1=parts[0],p2=parts[1],sz=mot.length<=3?24:mot.length<=5?19:15;var mkEl=(txt,col,side,pos)=>{var el=document.createElement("div");el.style.cssText="position:absolute;font-size:"+sz+"vw;font-weight:900;font-family:'Arial Rounded MT Bold',Arial,sans-serif;color:"+col+";top:50%;transform:translateY(-50%);"+side+":"+pos+"%;transition:"+side+" "+duree+"ms cubic-bezier(.4,0,.2,1),opacity "+(duree*.35)+"ms ease;";el.textContent=txt;return el;};var g=mkEl(p1,"#ffd54f","left",2);center.appendChild(g);this._extra.push(g);var d=null;if(p2){d=mkEl(p2,"#5c9cff","right",2);center.appendChild(d);this._extra.push(d);}this._t(()=>{g.style.left=(p2?"28":"42")+"%";if(d)d.style.right="28%";this._t(()=>{g.style.opacity="0";if(d)d.style.opacity="0";this._t(()=>{syl.textContent=mot;syl.style.display="";syl.style.position="absolute";syl.style.left="50%";syl.style.top="50%";syl.style.transform="translate(-50%,-50%)";syl.style.fontSize=sz+"vw";syl.style.color="#fff";},Math.round(duree*.35));},duree+50);},80);},
+  lettres(mot,speed,onDone){var syl=document.getElementById("syllabe"),sz=mot.length<=2?30:mot.length<=4?23:17;syl.style.fontSize=sz+"vw";syl.style.position="absolute";syl.style.left="50%";syl.style.top="50%";syl.style.transform="translate(-50%,-50%)";syl.style.transition="none";syl.style.color="#fff";syl.textContent="";var chars=[...mot],DELAY=700,i=0;var showNext=()=>{i++;syl.textContent=mot.slice(0,i);if(i<chars.length)this._t(showNext,DELAY);else if(onDone)this._t(onDone,450);};this._t(showNext,350);},
+  assemble(mot,speed,onDone){var syl=document.getElementById("syllabe");syl.style.display="none";var center=document.getElementById("ex-center"),DUREE=2000,parts=diviserSyllabe(mot),p1=parts[0],p2=parts[1],sz=mot.length<=3?24:mot.length<=5?19:15;var mkEl=(txt,col,side,pos)=>{var el=document.createElement("div");el.style.cssText="position:absolute;font-size:"+sz+"vw;font-weight:900;font-family:'Arial Rounded MT Bold',Arial,sans-serif;color:"+col+";top:50%;transform:translateY(-50%);"+side+":"+pos+"%;transition:"+side+" "+DUREE+"ms cubic-bezier(.25,0,.1,1),opacity "+(DUREE*.3)+"ms ease;";el.textContent=txt;return el;};var g=mkEl(p1,"#ffd54f","left",2);center.appendChild(g);this._extra.push(g);var d=null;if(p2){d=mkEl(p2,"#5c9cff","right",2);center.appendChild(d);this._extra.push(d);}this._t(()=>{g.style.left=(p2?"28":"42")+"%";if(d)d.style.right="28%";this._t(()=>{g.style.opacity="0";if(d)d.style.opacity="0";this._t(()=>{syl.textContent=mot;syl.style.display="";syl.style.position="absolute";syl.style.left="50%";syl.style.top="50%";syl.style.transform="translate(-50%,-50%)";syl.style.fontSize=sz+"vw";syl.style.color="#fff";if(onDone)this._t(onDone,500);},Math.round(DUREE*.3));},DUREE+80);},80);},
   flash(mot,speed){var syl=document.getElementById("syllabe"),sz=mot.length<=2?32:mot.length<=4?24:18;syl.style.fontSize=sz+"vw";syl.style.position="absolute";syl.style.left="50%";syl.style.top="50%";syl.style.transform="translate(-50%,-50%)";syl.style.transition="opacity .12s";syl.style.color="#fff";syl.textContent=mot;var visible=Math.round(1400/speed),nb=3,count=0;var doFlash=()=>{syl.style.opacity="1";this._t(()=>{syl.style.opacity="0";count++;if(count<nb)this._t(doFlash,400);},visible);};doFlash();}
 };
 
@@ -623,30 +623,48 @@ function plStartAuto(){
   plAuto=true;
   var btn=document.getElementById('pl-auto-btn');
   btn.textContent='⏸ Stop auto';btn.classList.add('actif');
-  afficherItem();
-  plAutoSchedule();
+  plAutoCycle();
 }
 function plStopAuto(){
   plAuto=false;clearTimeout(plAutoTimer);plAutoTimer=null;
+  Anim.stop();
   var g=document.getElementById('pl-ghost');if(g){g.style.display='none';g.classList.remove('plEat');}
   var syl=document.getElementById('syllabe');if(syl){syl.style.opacity='1';syl.style.transition='';}
   var btn=document.getElementById('pl-auto-btn');if(btn){btn.textContent='▶ Auto';btn.classList.remove('actif');}
 }
-function plAutoSchedule(){
+// Cycle auto : gère toutes les animations y compris mode jeu
+function plAutoCycle(){
   if(!plAuto)return;
-  plAutoTimer=setTimeout(function(){
-    plAnimGhostEat(function(){
-      if(!plAuto)return;
-      tourFait.push(eleveEnCours);
-      if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
-      eleveEnCours=tourRestant.shift();
-      renderHeader();
-      afficherItem();
-      plAutoTimer=setTimeout(plAutoSchedule,550);
-    });
-  },PL_DELAYS[plAutoSpd]);
+  var item=pool[Math.floor(Math.random()*pool.length)];
+  if(mode===5){
+    if(animType==='lettres'||animType==='assemble'){
+      // Animation lente avec callback quand terminée
+      Anim.run(animType,item,animSpeed,function(){if(plAuto)plAutoTimer=setTimeout(plEatAndNext,500);});
+    } else {
+      // rebond / balade / flash : fantôme arrive après le délai lecture
+      Anim.run(animType,item,animSpeed);
+      plAutoTimer=setTimeout(plEatAndNext,PL_DELAYS[plAutoSpd]);
+    }
+  } else {
+    var el=document.getElementById("syllabe");
+    el.style.opacity="0";
+    setTimeout(function(){el.textContent=item;ajusterTaille(el,item);el.style.transition="opacity .15s";el.style.opacity="1";setTimeout(function(){el.style.transition="";},200);},100);
+    plAutoTimer=setTimeout(plEatAndNext,PL_DELAYS[plAutoSpd]);
+  }
+}
+function plEatAndNext(){
+  if(!plAuto)return;
+  plAnimGhostEat(function(){
+    if(!plAuto)return;
+    tourFait.push(eleveEnCours);
+    if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
+    eleveEnCours=tourRestant.shift();
+    renderHeader();
+    plAutoTimer=setTimeout(plAutoCycle,480);
+  });
 }
 function plAnimGhostEat(cb){
+  Anim.freeze();
   var ghost=document.getElementById('pl-ghost');
   var syl=document.getElementById('syllabe');
   var r=syl.getBoundingClientRect();
