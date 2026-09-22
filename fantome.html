@@ -1,545 +1,603 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Le Fantôme Effaceur</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Caveat:wght@400;600&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎵 Piano Lecture · CP</title>
+<style>
+:root{
+  --bg:#0d1421;--surface:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.12);
+  --text:#e8eaf6;--muted:rgba(255,255,255,0.42);--accent:#5c9cff;
+  --jaune:#ffd54f;--vert:#66bb6a;--rouge:#ef5350;--gris:#546e7a;--rose:#f48fb1;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Arial,sans-serif;min-height:100vh;}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ─── CONFIG ─── */
+#config{max-width:720px;margin:0 auto;padding:28px 18px 60px;}
+.app-title{text-align:center;font-size:1.8rem;font-weight:800;color:var(--jaune);margin-bottom:28px;letter-spacing:1px;}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
+.section h2{font-size:.92rem;font-weight:700;color:var(--accent);margin-bottom:14px;letter-spacing:.4px;text-transform:uppercase;}
+.eleve-row{display:flex;gap:10px;margin-bottom:12px;}
+.eleve-row input{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-size:1rem;outline:none;}
+.eleve-row input:focus{border-color:var(--accent);}
+.eleve-row input::placeholder{color:var(--muted);}
+.btn-sm{background:rgba(92,156,255,.18);border:1px solid rgba(92,156,255,.4);border-radius:10px;color:var(--accent);font-size:1rem;font-weight:700;padding:9px 18px;cursor:pointer;white-space:nowrap;}
+.btn-sm:hover{background:rgba(92,156,255,.3);}
+.eleves-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.tag{background:rgba(92,156,255,.12);border:1px solid rgba(92,156,255,.3);border-radius:20px;padding:5px 10px 5px 14px;font-size:.9rem;color:var(--accent);display:flex;align-items:center;gap:5px;}
+.tag-del{cursor:pointer;color:var(--rouge);font-size:1.1rem;padding:0 2px;}
+.tag-del:hover{color:#ff7961;}
+.sel-wrap select{width:100%;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:.95rem;outline:none;cursor:pointer;-webkit-appearance:none;}
+.sel-wrap select:focus{border-color:var(--accent);}
+.sons-vus{margin-top:10px;font-size:.78rem;color:var(--muted);font-style:italic;line-height:1.5;word-break:break-all;}
+.modes{display:flex;flex-direction:column;gap:8px;}
+.mode-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--muted);font-size:.95rem;cursor:pointer;text-align:left;transition:all .18s;}
+.mode-btn:hover{border-color:var(--accent);color:var(--text);}
+.mode-btn.active{background:rgba(92,156,255,.15);border-color:var(--accent);color:var(--text);font-weight:700;}
+.mode-btn.jeu-active{background:rgba(244,143,177,.15);border-color:var(--rose);color:var(--text);font-weight:700;}
+.alerte{background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.35);border-radius:10px;padding:10px 14px;font-size:.85rem;color:#ff8a80;margin-top:10px;display:none;}
+.btn-lancer{width:100%;padding:15px;background:var(--accent);border:none;border-radius:14px;color:#0a0f1e;font-size:1.15rem;font-weight:800;cursor:pointer;letter-spacing:1px;transition:all .18s;margin-top:6px;}
+.btn-lancer:hover{background:#7eb3ff;transform:translateY(-1px);}
+.btn-lancer:disabled{background:var(--gris);cursor:not-allowed;opacity:.7;}
 
-    /* ── MODE CONFIGURATION (par défaut) ── */
-    body {
-      background: #0d1b2a;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Lora', Georgia, serif;
-      color: #e8dcc8;
-      padding: 30px 20px;
-      overflow-x: hidden;
-    }
+/* Sous-section mode jeu */
+#config-jeu{display:none;}
+.jeu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px;}
+.jeu-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px 8px;color:var(--muted);font-size:.82rem;cursor:pointer;text-align:center;transition:all .18s;line-height:1.5;}
+.jeu-btn:hover{border-color:var(--rose);color:var(--text);}
+.jeu-btn.active{background:rgba(244,143,177,.15);border-color:var(--rose);color:var(--text);font-weight:700;}
+.jeu-btn .emoji{font-size:1.6rem;display:block;margin-bottom:4px;}
+.jeu-btn small{opacity:.7;font-size:.75rem;}
+.speed-row{display:flex;align-items:center;gap:12px;margin-top:12px;}
+.speed-row label{color:var(--muted);font-size:.88rem;white-space:nowrap;}
+.speed-row input[type=range]{flex:1;-webkit-appearance:none;height:4px;background:rgba(244,143,177,.3);border-radius:2px;outline:none;cursor:pointer;}
+.speed-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--rose);border-radius:50%;box-shadow:0 0 6px rgba(244,143,177,.6);}
+.speed-row span{color:var(--muted);font-size:.85rem;min-width:70px;}
 
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 50% 30%, rgba(255,255,255,0.45) 0%, transparent 100%),
-        radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.45) 0%, transparent 100%),
-        radial-gradient(1px 1px at 20% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.35) 0%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
+/* ─── VUE EXERCICE ─── */
+#exercice{display:none;position:fixed;inset:0;background:#080c14;flex-direction:column;align-items:center;justify-content:space-between;}
+#exercice.visible{display:flex;}
+.ex-header{width:100%;display:flex;align-items:flex-start;justify-content:space-between;padding:20px 28px 0;}
+.ex-prenom{font-size:clamp(1.6rem,4.5vw,3rem);font-weight:900;color:var(--jaune);text-shadow:0 0 28px rgba(255,213,79,.45);}
+.ex-meta{text-align:right;font-size:.82rem;color:var(--muted);line-height:1.7;padding-top:4px;}
+.ex-meta b{color:var(--accent);}
+.tour-dots{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;max-width:50vw;}
+.dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.18);transition:background .3s;}
+.dot.done{background:var(--vert);}
+.dot.current{background:var(--jaune);box-shadow:0 0 8px rgba(255,213,79,.6);}
+.ex-center{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:0 5vw;}
+#syllabe{font-weight:900;color:#fff;text-align:center;line-height:1;letter-spacing:-.02em;text-shadow:0 0 80px rgba(92,156,255,.35);transition:opacity .12s ease,transform .12s ease;user-select:none;font-family:'Arial Rounded MT Bold',Arial,sans-serif;max-width:95vw;word-break:break-word;}
+#syllabe.flash-out{opacity:0;transform:scale(.93);}
+.ex-footer{width:100%;padding:16px 24px 28px;display:flex;gap:14px;justify-content:center;}
+.btn-action{flex:1;max-width:200px;padding:18px 12px;border:none;border-radius:18px;font-size:1.1rem;font-weight:800;cursor:pointer;transition:all .14s;letter-spacing:.5px;}
+.btn-action:hover{transform:translateY(-2px);filter:brightness(1.15);}
+.btn-action:active{transform:translateY(0);filter:brightness(.9);}
+.btn-erreur{background:var(--rouge);color:#fff;}
+.btn-bravo{background:var(--vert);color:#fff;}
+.btn-passer{background:#2e3d4d;color:var(--text);border:1px solid rgba(255,255,255,.12);}
+.btn-retour{position:absolute;bottom:28px;right:24px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:7px 15px;color:var(--muted);font-size:.8rem;cursor:pointer;}
+.btn-retour:hover{color:var(--text);border-color:var(--accent);}
+#flash-emoji{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.7);font-size:6rem;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:50;}
+#flash-emoji.show{opacity:1;transform:translate(-50%,-55%) scale(1);}
 
-    h1 {
-      font-family: 'Caveat', cursive;
-      font-size: 2rem;
-      color: #a8c5da;
-      margin-bottom: 18px;
-      letter-spacing: 2px;
-      text-align: center;
-      position: relative;
-      z-index: 1;
-      text-shadow: 0 0 20px rgba(168,197,218,0.4);
-    }
+/* Mode jeu - conteneur relatif */
+.ex-center.jeu-actif{position:relative;overflow:hidden;}
+.ex-center.jeu-actif #syllabe{position:absolute;}
 
-    .action-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 1;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    #file-input { display: none; }
-
-    #source-name {
-      font-family: 'Caveat', cursive;
-      font-size: 0.95rem;
-      color: rgba(168,197,218,0.6);
-      font-style: italic;
-    }
-
-    #editor-panel {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      max-width: 700px;
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 1;
-    }
-    #editor-panel.open { display: flex; }
-
-    #text-editor {
-      width: 100%;
-      min-height: 130px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(168,197,218,0.35);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-family: 'Lora', Georgia, serif;
-      font-size: 1rem;
-      color: #e8dcc8;
-      resize: vertical;
-      outline: none;
-      line-height: 1.7;
-    }
-    #text-editor::placeholder { color: rgba(168,197,218,0.35); }
-    #text-editor:focus { border-color: rgba(168,197,218,0.7); }
-
-    .editor-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 50px;
-      padding: 10px 24px;
-      position: relative;
-      z-index: 1;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .controls label {
-      font-family: 'Caveat', cursive;
-      font-size: 1.05rem;
-      color: #a8c5da;
-      white-space: nowrap;
-    }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      width: 140px;
-      height: 4px;
-      background: rgba(168,197,218,0.3);
-      border-radius: 2px;
-      outline: none;
-      cursor: pointer;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px; height: 16px;
-      background: #a8c5da;
-      border-radius: 50%;
-      box-shadow: 0 0 8px rgba(168,197,218,0.6);
-    }
-
-    #speed-label {
-      font-family: 'Caveat', cursive;
-      font-size: 0.95rem;
-      color: #c8dde8;
-      min-width: 75px;
-      text-align: center;
-    }
-
-    .btn {
-      font-family: 'Caveat', cursive;
-      font-size: 1rem;
-      padding: 7px 18px;
-      border: 1px solid rgba(168,197,218,0.4);
-      border-radius: 25px;
-      background: rgba(168,197,218,0.1);
-      color: #a8c5da;
-      cursor: pointer;
-      transition: all 0.22s;
-      letter-spacing: 1px;
-    }
-    .btn:hover {
-      background: rgba(168,197,218,0.22);
-      box-shadow: 0 0 10px rgba(168,197,218,0.3);
-      transform: translateY(-1px);
-    }
-    .btn.import-btn  { border-color: rgba(130,200,140,0.5); color: #90d4a0; background: rgba(130,200,140,0.08); }
-    .btn.import-btn:hover { background: rgba(130,200,140,0.18); }
-    .btn.edit-btn    { border-color: rgba(220,190,120,0.5); color: #e8cc80; background: rgba(220,190,120,0.08); }
-    .btn.edit-btn:hover { background: rgba(220,190,120,0.18); }
-    .btn.confirm-btn { border-color: rgba(130,200,140,0.5); color: #90d4a0; background: rgba(130,200,140,0.1); }
-    .btn.cancel-btn  { border-color: rgba(200,100,100,0.4); color: #e09090; background: rgba(200,100,100,0.08); }
-    .btn.play-btn    { border-color: rgba(168,197,218,0.6); font-size: 1.1rem; padding: 9px 26px; }
-
-    /* ── MODE PLEIN ÉCRAN ── */
-    #fullscreen-view {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: #0d1b2a;
-      z-index: 100;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 5vw;
-    }
-    #fullscreen-view.active { display: flex; }
-
-    /* Barre de contrôle flottante en bas */
-    #fs-controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      background: rgba(13,27,42,0.85);
-      border: 1px solid rgba(168,197,218,0.2);
-      border-radius: 50px;
-      padding: 8px 22px;
-      z-index: 200;
-      backdrop-filter: blur(8px);
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    /* Texte plein écran — taille dynamique via JS */
-    #fs-text {
-      width: 100%;
-      text-align: center;
-      line-height: 1.55;
-      color: #e8dcc8;
-      font-family: 'Lora', Georgia, serif;
-      /* font-size injecté par JS */
-    }
-
-    .word {
-      display: inline;
-      transition: opacity 0.3s ease;
-    }
-    .word.erased { opacity: 0; }
-
-    /* Fantôme */
-    #ghost {
-      position: fixed;
-      pointer-events: none;
-      z-index: 999;
-      transform: translate(-50%, -100%);
-      transition: left 0.08s linear, top 0.08s linear;
-      filter: drop-shadow(0 0 10px rgba(200,230,255,0.9));
-      animation: float 2s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%, 100% { transform: translate(-50%, -100%) translateY(0px); }
-      50%       { transform: translate(-50%, -100%) translateY(-7px); }
-    }
-    #ghost.eating { animation: eat 0.3s ease forwards; }
-    @keyframes eat {
-      0%   { transform: translate(-50%, -100%) scale(1); }
-      50%  { transform: translate(-50%, -100%) scale(1.5) rotate(-12deg); }
-      100% { transform: translate(-50%, -100%) scale(1); }
-    }
-
-    #finish-msg {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Caveat', cursive;
-      font-size: 3rem;
-      color: #a8c5da;
-      text-shadow: 0 0 30px rgba(168,197,218,0.6);
-      animation: fadeIn 1s ease;
-      z-index: 200;
-      text-align: center;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translate(-50%, -55%); }
-      to   { opacity: 1; transform: translate(-50%, -50%); }
-    }
-  </style>
+/* Badge mode jeu */
+.badge-jeu{display:inline-block;background:rgba(244,143,177,.2);border:1px solid rgba(244,143,177,.4);border-radius:8px;padding:1px 8px;font-size:.75rem;color:var(--rose);margin-left:6px;vertical-align:middle;}
+</style>
 </head>
 <body>
 
-  <h1>👻 Le Fantôme Effaceur</h1>
+<!-- ════ CONFIG ════ -->
+<div id="config">
+  <div class="app-title">🎵 Piano Lecture · CP</div>
 
-  <!-- Actions -->
-  <div class="action-bar">
-    <label for="file-input" class="btn import-btn">📂 Importer (.txt)</label>
-    <input type="file" id="file-input" accept=".txt,text/plain">
-    <button class="btn edit-btn" id="edit-btn">✏️ Saisir un texte</button>
-    <button class="btn cancel-btn" id="clear-btn" style="display:none;">🗑 Supprimer le texte</button>
-    <span id="source-name">Texte par défaut</span>
+  <div class="section">
+    <h2>👥 Élèves de la classe</h2>
+    <div class="eleve-row">
+      <input type="text" id="inp-prenom" placeholder="Prénom…">
+      <button class="btn-sm" onclick="ajouterEleve()">+ Ajouter</button>
+    </div>
+    <div class="eleves-tags" id="eleves-tags"></div>
   </div>
 
-  <!-- Éditeur -->
-  <div id="editor-panel">
-    <textarea id="text-editor" placeholder="Écris ton texte ici…"></textarea>
-    <div class="editor-actions">
-      <button class="btn cancel-btn" id="cancel-btn">✖ Annuler</button>
-      <button class="btn confirm-btn" id="confirm-btn">✅ Utiliser ce texte</button>
+  <div class="section">
+    <h2>📚 Leçon du jour</h2>
+    <div class="sel-wrap"><select id="sel-etape" onchange="changerEtape()"></select></div>
+    <div class="sons-vus" id="sons-vus"></div>
+  </div>
+
+  <div class="section">
+    <h2>🎯 Type d’exercice</h2>
+    <div class="modes" id="modes">
+      <button class="mode-btn" onclick="choisirMode(0)">① Lecture des voyelles (a · e · i · o · u)</button>
+      <button class="mode-btn" onclick="choisirMode(1)">② Syllabes du son étudié aujourd’hui</button>
+      <button class="mode-btn" onclick="choisirMode(2)">③ Syllabes inversées (voyelle + consonne)</button>
+      <button class="mode-btn" onclick="choisirMode(3)">④ Mélange de toutes les syllabes vues</button>
+      <button class="mode-btn" onclick="choisirMode(4)">⑤ Mots décodables</button>
+      <button class="mode-btn" onclick="choisirMode(5)">🎮 Mode jeu animé <span class="badge-jeu">NOUVEAU</span></button>
+    </div>
+    <div class="alerte" id="alerte-mode"></div>
+  </div>
+
+  <!-- Sous-section mode jeu -->
+  <div class="section" id="config-jeu">
+    <h2>🎮 Choisir une animation</h2>
+    <div class="jeu-grid">
+      <button class="jeu-btn active" onclick="choisirAnim('rebond')"><span class="emoji">🏀</span><b>Rebond</b><br><small>Rebondit sur les bords</small></button>
+      <button class="jeu-btn" onclick="choisirAnim('balade')"><span class="emoji">🎈</span><b>Balade</b><br><small>Se déplace doucement</small></button>
+      <button class="jeu-btn" onclick="choisirAnim('lettres')"><span class="emoji">✨</span><b>Lettre par lettre</b><br><small>Apparition progressive</small></button>
+      <button class="jeu-btn" onclick="choisirAnim('assemble')"><span class="emoji">🧩</span><b>Assemblage</b><br><small>Les parties se rejoignent</small></button>
+      <button class="jeu-btn" onclick="choisirAnim('flash')"><span class="emoji">⚡</span><b>Flash</b><br><small>Apparition fugace</small></button>
+    </div>
+    <div class="speed-row">
+      <label>Vitesse :</label>
+      <input type="range" id="speed-jeu" min="1" max="5" value="3" oninput="updateSpeedJeu()">
+      <span id="speed-jeu-lbl">Normale</span>
     </div>
   </div>
 
-  <!-- Contrôles -->
-  <div class="controls">
-    <label for="speed">Vitesse :</label>
-    <input type="range" id="speed" min="1" max="10" value="5">
-    <span id="speed-label">Normale</span>
-    <button class="btn play-btn" id="launch-btn">▶ Lancer en plein écran</button>
+  <button class="btn-lancer" id="btn-lancer" onclick="lancer()" disabled>▶ Lancer l’exercice</button>
+</div>
+
+<!-- ════ EXERCICE ════ -->
+<div id="exercice">
+  <div class="ex-header">
+    <div>
+      <div class="ex-prenom" id="ex-prenom">—</div>
+      <div class="tour-dots" id="tour-dots"></div>
+    </div>
+    <div class="ex-meta" id="ex-meta"></div>
   </div>
-
-  <!-- ── VUE PLEIN ÉCRAN ── -->
-  <div id="fullscreen-view">
-    <div id="fs-text"></div>
-    <div id="finish-msg">🌙 Le fantôme a tout dévoré…</div>
+  <div class="ex-center" id="ex-center">
+    <div id="syllabe">—</div>
   </div>
-
-  <!-- Contrôles flottants (visibles seulement en plein écran) -->
-  <div id="fs-controls" style="display:none;">
-    <button class="btn" id="toggle-btn">⏸ Pause</button>
-    <button class="btn" id="reset-btn">↺ Recommencer</button>
-    <label for="speed-fs" style="font-family:'Caveat',cursive;color:#a8c5da;font-size:1rem;">Vitesse :</label>
-    <input type="range" id="speed-fs" min="1" max="10" value="5">
-    <span id="speed-label-fs" style="font-family:'Caveat',cursive;color:#c8dde8;font-size:0.95rem;min-width:75px;text-align:center;">Normale</span>
-    <button class="btn cancel-btn" id="exit-btn">✖ Quitter</button>
+  <div class="ex-footer">
+    <button class="btn-action btn-erreur" onclick="repondre(false)">❌ Encore</button>
+    <button class="btn-action btn-bravo"  onclick="repondre(true)">✅ Bravo !</button>
+    <button class="btn-action btn-passer" onclick="passerEleve()">⏭ Suivant</button>
   </div>
+  <button class="btn-retour" onclick="quitter()">⬅ Config</button>
+</div>
 
-  <!-- Fantôme SVG -->
-  <div id="ghost" style="display:none;">
-    <svg width="64" height="74" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="24" cy="22" rx="18" ry="20" fill="rgba(220,235,255,0.93)"/>
-      <rect x="6" y="22" width="36" height="22" fill="rgba(220,235,255,0.93)"/>
-      <path d="M6 44 Q10 50 14 44 Q18 50 22 44 Q26 50 30 44 Q34 50 38 44 Q42 50 42 44 L6 44Z" fill="rgba(220,235,255,0.93)"/>
-      <ellipse cx="17" cy="22" rx="4" ry="5" fill="#1a2a3a"/>
-      <ellipse cx="31" cy="22" rx="4" ry="5" fill="#1a2a3a"/>
-      <circle cx="18.5" cy="20.5" r="1.5" fill="white" opacity="0.85"/>
-      <circle cx="32.5" cy="20.5" r="1.5" fill="white" opacity="0.85"/>
-      <path d="M18 30 Q24 36 30 30" stroke="#1a2a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <ellipse cx="24" cy="18" rx="18" ry="20" fill="rgba(180,215,255,0.12)"/>
-    </svg>
-  </div>
+<div id="flash-emoji"></div>
 
-  <script>
-    const defaultText = `Un texte est une série orale ou écrite de mots perçus comme constituant un ensemble cohérent, porteur de sens et utilisant les structures propres à une langue (conjugaisons, construction et association des phrases…)[1]. Un texte n'a pas de longueur déterminée sauf dans le cas de poèmes à forme fixe comme le sonnet ou le haïku.
-L'étude formelle des textes s'appuie sur la linguistique, qui est l'approche scientifique du langage.`;
+<script>
+// ══ PROGRESSION ══
+const PROG=[
+  {id:0, label:"Voyelles",                            type:"voy_base", son:["a","e","i","o","u"]},
+  {id:1, label:"l",                                   type:"consonne", son:["l"]},
+  {id:2, label:"f",                                   type:"consonne", son:["f"]},
+  {id:3, label:"ch",                                  type:"consonne", son:["ch"]},
+  {id:4, label:"s",                                   type:"consonne", son:["s"]},
+  {id:5, label:"m",                                   type:"consonne", son:["m"]},
+  {id:6, label:"r",                                   type:"consonne", son:["r"]},
+  {id:7, label:"n",                                   type:"consonne", son:["n"]},
+  {id:8, label:"v",                                   type:"consonne", son:["v"]},
+  {id:9, label:"j",                                   type:"consonne", son:["j"]},
+  {id:10,label:"z",                                   type:"consonne", son:["z"]},
+  {id:11,label:"p",                                   type:"consonne", son:["p"]},
+  {id:12,label:"t",                                   type:"consonne", son:["t"]},
+  {id:13,label:"c",                                   type:"consonne", son:["c"]},
+  {id:14,label:"b",                                   type:"consonne", son:["b"]},
+  {id:15,label:"d",                                   type:"consonne", son:["d"]},
+  {id:16,label:"g",                                   type:"consonne", son:["g"]},
+  {id:17,label:"h",                                   type:"consonne", son:["h"]},
+  {id:18,label:"au",                                  type:"voy_comp", son:["au"]},
+  {id:19,label:"ou",                                  type:"voy_comp", son:["ou"]},
+  {id:20,label:"on",                                  type:"voy_comp", son:["on"]},
+  {id:21,label:"oi",                                  type:"voy_comp", son:["oi"]},
+  {id:22,label:"an",                                  type:"voy_comp", son:["an"]},
+  {id:23,label:"am",                                  type:"voy_comp", son:["am"]},
+  {id:24,label:"en",                                  type:"voy_comp", son:["en"]},
+  {id:25,label:"em",                                  type:"voy_comp", son:["em"]},
+  {id:26,label:"ai",                                  type:"voy_comp", son:["ai"]},
+  {id:27,label:"ei",                                  type:"voy_comp", son:["ei"]},
+  {id:28,label:"è",                              type:"voy_comp", son:["è"]},
+  {id:29,label:"fr · cr · dr · br · gr · pr · tr",type:"groupe",son:["fr","cr","dr","br","gr","pr","tr"]},
+  {id:30,label:"fl · cl · bl · gl · pl",               type:"groupe",son:["fl","cl","bl","gl","pl"]},
+  {id:31,label:"in",                                  type:"voy_comp", son:["in"]},
+  {id:32,label:"oin",                                 type:"voy_comp", son:["oin"]},
+  {id:33,label:"ian · ien",                      type:"voy_comp", son:["ian","ien"]},
+];
 
-    let currentText = defaultText;
+const MOTS=[
+  {e:1,m:"fil"},{e:1,m:"sol"},{e:4,m:"sur"},{e:5,m:"mur"},{e:5,m:"mal"},{e:5,m:"mil"},
+  {e:8,m:"vis"},{e:10,m:"riz"},
+  {e:11,m:"polo"},{e:11,m:"puma"},{e:11,m:"pic"},{e:11,m:"cap"},
+  {e:12,m:"moto"},{e:12,m:"loto"},{e:13,m:"sac"},{e:13,m:"lac"},{e:13,m:"col"},
+  {e:13,m:"car"},{e:13,m:"toc"},{e:13,m:"tic"},{e:13,m:"coco"},{e:13,m:"solo"},
+  {e:14,m:"bus"},{e:14,m:"bar"},{e:14,m:"bol"},{e:14,m:"bal"},{e:14,m:"bac"},
+  {e:14,m:"bec"},{e:14,m:"bobo"},{e:14,m:"baba"},
+  {e:15,m:"dodo"},{e:15,m:"soda"},{e:15,m:"judo"},{e:15,m:"radio"},{e:15,m:"domino"},
+  {e:16,m:"gala"},{e:16,m:"yoga"},
+  {e:19,m:"chou"},{e:19,m:"fou"},{e:19,m:"mou"},{e:19,m:"sou"},{e:19,m:"pou"},{e:19,m:"cou"},
+  {e:20,m:"mouton"},{e:20,m:"bouton"},{e:20,m:"salon"},{e:20,m:"balcon"},
+  {e:21,m:"roi"},{e:21,m:"loi"},{e:21,m:"foi"},{e:21,m:"moi"},{e:21,m:"toi"},{e:21,m:"soi"},
+  {e:21,m:"poison"},
+  {e:22,m:"van"},{e:22,m:"ban"},{e:22,m:"fan"},{e:22,m:"roman"},
+  {e:26,m:"maison"},{e:26,m:"raison"},
+  {e:28,m:"vélo"},{e:28,m:"zéro"},{e:28,m:"bébé"},{e:28,m:"café"},
+  {e:29,m:"frac"},{e:29,m:"gril"},{e:29,m:"tram"},{e:29,m:"cric"},{e:29,m:"fric"},
+  {e:30,m:"bloc"},{e:30,m:"clac"},{e:30,m:"floc"},
+  {e:31,m:"lapin"},{e:31,m:"sapin"},{e:31,m:"lutin"},{e:31,m:"marin"},{e:31,m:"matin"},
+  {e:32,m:"coin"},{e:32,m:"loin"},{e:32,m:"soin"},{e:32,m:"foin"},{e:32,m:"besoin"},
+  {e:33,m:"chien"},{e:33,m:"bien"},{e:33,m:"rien"},{e:33,m:"mien"},{e:33,m:"lien"},
+];
 
-    const fileInput    = document.getElementById('file-input');
-    const sourceNameEl = document.getElementById('source-name');
-    const editBtn      = document.getElementById('edit-btn');
-    const editorPanel  = document.getElementById('editor-panel');
-    const textEditor   = document.getElementById('text-editor');
-    const confirmBtn   = document.getElementById('confirm-btn');
-    const cancelBtn    = document.getElementById('cancel-btn');
-    const speedRange   = document.getElementById('speed');
-    const speedLabel   = document.getElementById('speed-label');
-    const launchBtn    = document.getElementById('launch-btn');
-    const fsView       = document.getElementById('fullscreen-view');
-    const fsText       = document.getElementById('fs-text');
-    const fsControls   = document.getElementById('fs-controls');
-    const toggleBtn    = document.getElementById('toggle-btn');
-    const resetBtn     = document.getElementById('reset-btn');
-    const exitBtn      = document.getElementById('exit-btn');
-    const ghost        = document.getElementById('ghost');
-    const finishMsg    = document.getElementById('finish-msg');
-    const clearBtn     = document.getElementById('clear-btn');
-    const speedRangeFs = document.getElementById('speed-fs');
-    const speedLabelFs = document.getElementById('speed-label-fs');
+// ══ ÉTAT ══
+let eleves   = JSON.parse(localStorage.getItem("piano_eleves")||"[]");
+let etape    = parseInt(localStorage.getItem("piano_etape")||"0");
+let mode     = null;
+let animType  = "rebond";
+let animSpeed = 3;
+let pool=[], tourRestant=[], tourFait=[], eleveEnCours=null;
 
-    let wordSpans = [], currentIndex = 0, running = false, timer = null;
+// ══ INIT ══
+function init(){
+  const sel=document.getElementById("sel-etape");
+  PROG.forEach((p,i)=>{
+    const opt=document.createElement("option");
+    opt.value=i;
+    opt.textContent=("0"+i).slice(-2)+" — "+p.label;
+    sel.appendChild(opt);
+  });
+  sel.value=etape;
+  document.getElementById("inp-prenom").addEventListener("keydown",e=>{if(e.key==="Enter")ajouterEleve();});
+  document.addEventListener("keydown",e=>{
+    if(!document.getElementById("exercice").classList.contains("visible"))return;
+    if(e.key===" "||e.key==="ArrowRight"){e.preventDefault();passerEleve();}
+    if(e.key==="ArrowUp"||e.key.toLowerCase()==="v")repondre(true);
+    if(e.key==="ArrowDown"||e.key.toLowerCase()==="x")repondre(false);
+  });
+  renderEleves();
+  changerEtape();
+}
 
-    const speedLabels = ['','Très lente','Très lente','Lente','Lente','Normale','Normale','Rapide','Rapide','Très rapide','Fulgurante'];
+// ══ ÉLÈVES ══
+function renderEleves(){
+  const c=document.getElementById("eleves-tags");
+  c.innerHTML="";
+  eleves.forEach((p,i)=>{
+    c.innerHTML+=`<div class="tag">${p}<span class="tag-del" onclick="supprimerEleve(${i})">×</span></div>`;
+  });
+  localStorage.setItem("piano_eleves",JSON.stringify(eleves));
+  updateLancer();
+}
+function ajouterEleve(){
+  const inp=document.getElementById("inp-prenom");
+  const v=inp.value.trim();
+  if(!v)return;
+  eleves.push(v.charAt(0).toUpperCase()+v.slice(1));
+  inp.value="";renderEleves();
+}
+function supprimerEleve(i){eleves.splice(i,1);renderEleves();}
 
-    function getDelay() { return Math.round(2000 / parseInt(speedRange.value)); }
+// ══ LEÇON ══
+function getSons(upTo){
+  const voy=[],cons=[],grp=[];
+  for(let i=0;i<=upTo;i++){
+    const p=PROG[i];
+    if(p.type==="voy_base"||p.type==="voy_comp")voy.push(...p.son);
+    else if(p.type==="consonne")cons.push(...p.son);
+    else if(p.type==="groupe")grp.push(...p.son);
+  }
+  return{voy,cons,grp};
+}
+function changerEtape(){
+  etape=parseInt(document.getElementById("sel-etape").value);
+  localStorage.setItem("piano_etape",etape);
+  const{voy,cons,grp}=getSons(etape);
+  document.getElementById("sons-vus").textContent="Sons disponibles : "+[...voy,...cons,...grp].join(" · ");
+  if(mode!==null)validerMode(mode);
+  updateLancer();
+}
 
-    // Calcule la plus grande font-size qui fait tenir le texte dans la fenêtre
-    function fitFontSize() {
-      const maxW = window.innerWidth * 0.9;
-      const maxH = window.innerHeight * 0.82; // laisser place aux contrôles en bas
-      let size = 14;
-      fsText.style.fontSize = size + 'px';
-      // Monte jusqu'à ce que ça déborde
-      while (size < 120) {
-        size += 2;
-        fsText.style.fontSize = size + 'px';
-        if (fsText.scrollWidth > maxW || fsText.scrollHeight > maxH) {
-          size -= 2;
-          break;
-        }
+// ══ MODE ══
+function choisirMode(m){
+  mode=m;
+  document.querySelectorAll(".mode-btn").forEach((b,i)=>{
+    b.classList.remove("active","jeu-active");
+    if(i===m)b.classList.add(m===5?"jeu-active":"active");
+  });
+  document.getElementById("config-jeu").style.display=m===5?"block":"none";
+  validerMode(m);
+  updateLancer();
+}
+function validerMode(m){
+  const{cons}=getSons(etape);
+  const al=document.getElementById("alerte-mode");
+  let msg="";
+  if((m===2||m===3)&&cons.length===0)msg="⚠ Pas encore de consonnes vues.";
+  if(m===4&&MOTS.filter(x=>x.e<=etape).length===0)msg="⚠ Pas encore de mots disponibles à cette étape.";
+  if(m===5&&cons.length===0&&PROG[etape].type==="voy_base"&&etape===0)msg="";
+  al.style.display=msg?"block":"none";
+  al.textContent=msg;
+}
+function updateLancer(){
+  document.getElementById("btn-lancer").disabled=(eleves.length===0||mode===null);
+}
+function choisirAnim(type){
+  animType=type;
+  const types=["rebond","balade","lettres","assemble","flash"];
+  document.querySelectorAll(".jeu-btn").forEach((b,i)=>b.classList.toggle("active",types[i]===type));
+}
+function updateSpeedJeu(){
+  animSpeed=parseInt(document.getElementById("speed-jeu").value);
+  const lbl=["","Très lente","Lente","Normale","Rapide","Très rapide"];
+  document.getElementById("speed-jeu-lbl").textContent=lbl[animSpeed];
+}
+
+// ══ GÉNÉRATION ══
+function genItems(){
+  const{voy,cons,grp}=getSons(etape);
+  const p=PROG[etape];
+  switch(mode){
+    case 0:return["a","e","i","o","u"];
+    case 1:{
+      if(p.type==="voy_base")return[...p.son];
+      if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));
+      if(p.type==="voy_comp"){
+        const av=cons.flatMap(c=>p.son.map(s=>c+s));
+        return[...p.son,...av];
       }
-      fsText.style.fontSize = size + 'px';
+      if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));
+      return[];
     }
-
-    function buildFsText() {
-      fsText.innerHTML = '';
-      wordSpans = [];
-      const lines = currentText.split(/\n/);
-      lines.forEach((line, lineIdx) => {
-        line.split(/(\s+)/).forEach(token => {
-          if (token === '') return;
-          const span = document.createElement('span');
-          span.className = 'word';
-          span.textContent = token;
-          fsText.appendChild(span);
-          if (token.trim() !== '') wordSpans.push(span);
-        });
-        if (lineIdx < lines.length - 1) fsText.appendChild(document.createElement('br'));
-      });
-      fitFontSize();
+    case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];
+    case 3:{
+      if(!cons.length)return[];
+      return[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))];
     }
-
-    function moveGhostToWord(span, cb) {
-      const r = span.getBoundingClientRect();
-      ghost.style.left = (r.left + r.width / 2) + 'px';
-      ghost.style.top  = r.top + 'px';
-      setTimeout(cb, getDelay() * 0.6);
+    case 4:return[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];
+    case 5:{ // mode jeu : utilise le même pool que le mélange (ou syllabes du jour si étape 0)
+      if(p.type==="voy_base")return[...p.son];
+      const directes=cons.flatMap(c=>voy.map(v=>c+v));
+      const groupes=grp.flatMap(g=>voy.map(v=>g+v));
+      return[...(directes.length?directes:p.son),...groupes];
     }
+  }
+  return[];
+}
 
-    function eatWord(span) {
-      ghost.classList.remove('eating');
-      void ghost.offsetWidth;
-      ghost.classList.add('eating');
-      span.classList.add('erased');
-    }
+function diviserSyllabe(mot){
+  if(mot.length<=1)return[mot,""];
+  const{cons,grp}=getSons(etape);
+  const debuts=[...grp,...cons].sort((a,b)=>b.length-a.length);
+  for(const c of debuts){
+    if(mot.startsWith(c)&&mot.length>c.length)return[c,mot.slice(c.length)];
+  }
+  return[mot[0],mot.slice(1)];
+}
 
-    function step() {
-      if (!running) return;
-      if (currentIndex >= wordSpans.length) {
-        ghost.style.display = 'none';
-        finishMsg.style.display = 'block';
-        running = false;
-        toggleBtn.textContent = '▶ Rejouer';
-        return;
-      }
-      ghost.style.display = 'block';
-      moveGhostToWord(wordSpans[currentIndex], () => {
-        eatWord(wordSpans[currentIndex++]);
-        timer = setTimeout(step, getDelay() * 0.4);
-      });
-    }
+// ══ ANIMATIONS ══
+const Anim={
+  _raf:null,_touts:[],_extra:[],
 
-    function start() {
-      if (currentIndex >= wordSpans.length) resetAnim();
-      running = true;
-      toggleBtn.textContent = '⏸ Pause';
-      step();
-    }
+  stop(){
+    if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}
+    this._touts.forEach(clearTimeout);this._touts=[];
+    this._extra.forEach(el=>{if(el.parentNode)el.parentNode.removeChild(el);});
+    this._extra=[];
+    const syl=document.getElementById("syllabe");
+    syl.style.cssText="";
+    document.getElementById("ex-center").classList.remove("jeu-actif");
+  },
 
-    function pause() {
-      running = false;
-      clearTimeout(timer);
-      toggleBtn.textContent = '▶ Reprendre';
-    }
+  _t(fn,ms){const t=setTimeout(fn,ms);this._touts.push(t);return t;},
 
-    function resetAnim() {
-      running = false;
-      clearTimeout(timer);
-      currentIndex = 0;
-      ghost.style.display = 'none';
-      finishMsg.style.display = 'none';
-      toggleBtn.textContent = '⏸ Pause';
-      buildFsText();
-    }
+  run(type,mot,speed){
+    this.stop();
+    const center=document.getElementById("ex-center");
+    center.classList.add("jeu-actif");
+    this[type](mot,speed);
+  },
 
-    function enterFullscreen() {
-      buildFsText();
-      fsView.classList.add('active');
-      fsControls.style.display = 'flex';
-      // Demander le vrai plein écran navigateur si possible
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-      start();
-    }
+  rebond(mot,speed){
+    const syl=document.getElementById("syllabe");
+    syl.textContent=mot;
+    const sz=mot.length<=2?20:mot.length<=4?15:11;
+    syl.style.fontSize=sz+"vw";
+    syl.style.transition="none";
+    syl.style.color="#fff";
+    let x=15,y=15;
+    const spd=0.06+(speed-1)*0.08;
+    let vx=spd*(Math.random()>.5?1:-1);
+    let vy=spd*0.75*(Math.random()>.5?1:-1);
+    const frame=()=>{
+      x+=vx;y+=vy;
+      if(x>=78){x=78;vx=-Math.abs(vx);}
+      if(x<=0){x=0;vx=Math.abs(vx);}
+      if(y>=72){y=72;vy=-Math.abs(vy);}
+      if(y<=0){y=0;vy=Math.abs(vy);}
+      syl.style.left=x+"%";syl.style.top=y+"%";
+      this._raf=requestAnimationFrame(frame);
+    };
+    syl.style.left=x+"%";syl.style.top=y+"%";
+    this._raf=requestAnimationFrame(frame);
+  },
 
-    function exitFullscreen() {
-      pause();
-      ghost.style.display = 'none';
-      finishMsg.style.display = 'none';
-      fsView.classList.remove('active');
-      fsControls.style.display = 'none';
-      if (document.exitFullscreen && document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
+  balade(mot,speed){
+    const syl=document.getElementById("syllabe");
+    syl.textContent=mot;
+    const sz=mot.length<=2?22:mot.length<=4?17:13;
+    syl.style.fontSize=sz+"vw";
+    const dur=1.2/speed;
+    syl.style.transition="left "+dur+"s cubic-bezier(.4,0,.2,1), top "+dur+"s cubic-bezier(.4,0,.2,1)";
+    syl.style.color="#fff";
+    syl.style.left="35%";syl.style.top="40%";
+    const intervalMs=Math.round(2800/speed);
+    const move=()=>{
+      const x=4+Math.random()*74;
+      const y=5+Math.random()*68;
+      syl.style.left=x+"%";syl.style.top=y+"%";
+      this._touts.push(setTimeout(move,intervalMs));
+    };
+    this._t(move,400);
+  },
 
-    function loadText(text, label) {
-      currentText = text.trim();
-      sourceNameEl.textContent = label;
-      clearBtn.style.display = 'inline-block';
-    }
+  lettres(mot,speed){
+    const syl=document.getElementById("syllabe");
+    const sz=mot.length<=2?30:mot.length<=4?23:17;
+    syl.style.fontSize=sz+"vw";
+    syl.style.position="absolute";
+    syl.style.left="50%";syl.style.top="50%";
+    syl.style.transform="translate(-50%,-50%)";
+    syl.style.transition="none";
+    syl.style.color="#fff";
+    syl.textContent="";
+    const chars=[...mot];
+    const delai=Math.round(750/speed);
+    let i=0;
+    const showNext=()=>{
+      i++;
+      syl.textContent=mot.slice(0,i);
+      if(i<chars.length)this._t(showNext,delai);
+    };
+    this._t(showNext,300);
+  },
 
-    function clearText() {
-      currentText = defaultText;
-      sourceNameEl.textContent = 'Texte par défaut';
-      clearBtn.style.display = 'none';
-    }
+  assemble(mot,speed){
+    const syl=document.getElementById("syllabe");
+    syl.style.display="none";
+    const center=document.getElementById("ex-center");
+    const duree=Math.round(1300/speed);
+    const[p1,p2]=diviserSyllabe(mot);
+    const sz=mot.length<=3?24:mot.length<=5?19:15;
+    const makeEl=(txt,col,side,pos)=>{
+      const el=document.createElement("div");
+      el.style.cssText="position:absolute;font-size:"+sz+"vw;font-weight:900;font-family:'Arial Rounded MT Bold',Arial,sans-serif;"+
+        "color:"+col+";top:50%;transform:translateY(-50%);"+side+":"+pos+"%;"+
+        "transition:"+side+" "+duree+"ms cubic-bezier(.4,0,.2,1),opacity "+(duree*.35)+"ms ease;";
+      el.textContent=txt;
+      return el;
+    };
+    const g=makeEl(p1,"#ffd54f","left",2);
+    center.appendChild(g);this._extra.push(g);
+    let d=null;
+    if(p2){d=makeEl(p2,"#5c9cff","right",2);center.appendChild(d);this._extra.push(d);}
 
-    // Import .txt
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        loadText(ev.target.result, '📄 ' + file.name);
-        fileInput.value = '';
-      };
-      reader.onerror = () => { sourceNameEl.textContent = '⚠ Erreur'; fileInput.value = ''; };
-      reader.readAsText(file, 'UTF-8');
-    });
+    this._t(()=>{
+      g.style.left=(p2?"28":"42")+"%";
+      if(d)d.style.right="28%";
+      this._t(()=>{
+        g.style.opacity="0";
+        if(d)d.style.opacity="0";
+        this._t(()=>{
+          syl.textContent=mot;
+          syl.style.display="";
+          syl.style.position="absolute";
+          syl.style.left="50%";syl.style.top="50%";
+          syl.style.transform="translate(-50%,-50%)";
+          syl.style.fontSize=sz+"vw";
+          syl.style.color="#fff";
+        },Math.round(duree*.35));
+      },duree+50);
+    },80);
+  },
 
-    // Éditeur
-    editBtn.addEventListener('click', () => {
-      textEditor.value = '';
-      editorPanel.classList.add('open');
-      textEditor.focus();
-    });
-    confirmBtn.addEventListener('click', () => {
-      const txt = textEditor.value.trim();
-      if (!txt) return;
-      editorPanel.classList.remove('open');
-      loadText(txt, '✏️ Texte saisi');
-    });
-    cancelBtn.addEventListener('click', () => editorPanel.classList.remove('open'));
+  flash(mot,speed){
+    const syl=document.getElementById("syllabe");
+    const sz=mot.length<=2?32:mot.length<=4?24:18;
+    syl.style.fontSize=sz+"vw";
+    syl.style.position="absolute";
+    syl.style.left="50%";syl.style.top="50%";
+    syl.style.transform="translate(-50%,-50%)";
+    syl.style.transition="opacity 0.12s";
+    syl.style.color="#fff";
+    syl.textContent=mot;
+    const visible=Math.round(1400/speed);
+    const pause=400;
+    const nb=3;
+    let count=0;
+    const doFlash=()=>{
+      syl.style.opacity="1";
+      this._t(()=>{
+        syl.style.opacity="0";
+        count++;
+        if(count<nb)this._t(doFlash,pause);
+      },visible);
+    };
+    doFlash();
+  }
+};
 
-    // Lancement
-    clearBtn.addEventListener('click', clearText);
-    launchBtn.addEventListener('click', enterFullscreen);
-    exitBtn.addEventListener('click', exitFullscreen);
-    toggleBtn.addEventListener('click', () => { running ? pause() : start(); });
-    resetBtn.addEventListener('click', resetAnim);
+// ══ LANCEMENT ══
+function lancer(){
+  pool=genItems();
+  if(!pool.length)return;
+  tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;
+  document.getElementById("config").style.display="none";
+  document.getElementById("exercice").classList.add("visible");
+  if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});
+  nextEleve();
+}
 
-    speedRange.addEventListener('input', () => {
-      const v = parseInt(speedRange.value);
-      speedLabel.textContent   = speedLabels[v];
-      speedRangeFs.value       = v;
-      speedLabelFs.textContent = speedLabels[v];
-    });
-    speedRangeFs.addEventListener('input', () => {
-      const v = parseInt(speedRangeFs.value);
-      speedLabelFs.textContent = speedLabels[v];
-      speedRange.value         = v;
-      speedLabel.textContent   = speedLabels[v];
-    });
-
-    // Recalculer la taille si la fenêtre change
-    window.addEventListener('resize', () => {
-      if (fsView.classList.contains('active')) fitFontSize();
-    });
-
-    speedLabel.textContent = speedLabels[parseInt(speedRange.value)];
-  </script>
+// ══ LOGIQUE JEU ══
+function nextEleve(){
+  Anim.stop();
+  if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
+  eleveEnCours=tourRestant.shift();
+  renderHeader();
+  afficherItem();
+}
+function renderHeader(){
+  document.getElementById("ex-prenom").textContent="👤 "+eleveEnCours;
+  const dots=document.getElementById("tour-dots");
+  dots.innerHTML="";
+  eleves.forEach(e=>{
+    const d=document.createElement("div");
+    d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");
+    dots.appendChild(d);
+  });
+  const mlbl=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"];
+  const animlbl={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};
+  const extra=mode===5?" · "+animlbl[animType]:"";
+  document.getElementById("ex-meta").innerHTML="Leçon : <b>"+PROG[etape].label+"</b><br>"+mlbl[mode]+extra;
+}
+function afficherItem(){
+  const item=pool[Math.floor(Math.random()*pool.length)];
+  if(mode===5){
+    Anim.run(animType,item,animSpeed);
+    return;
+  }
+  const el=document.getElementById("syllabe");
+  el.classList.add("flash-out");
+  setTimeout(()=>{
+    el.textContent=item;
+    el.classList.remove("flash-out");
+    ajusterTaille(el,item);
+  },130);
+}
+function ajusterTaille(el,txt){
+  const len=txt.length;
+  let vw=len<=1?38:len<=2?30:len<=3?22:len<=5?16:len<=7?12:9;
+  el.style.fontSize=vw+"vw";
+  const maxH=window.innerHeight*.52;
+  while(el.offsetHeight>maxH&&vw>5){vw--;el.style.fontSize=vw+"vw";}
+}
+function repondre(bravo){
+  tourFait.push(eleveEnCours);
+  const fe=document.getElementById("flash-emoji");
+  fe.textContent=bravo?"⭐":"💪";
+  fe.classList.add("show");
+  setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);
+}
+function passerEleve(){tourFait.push(eleveEnCours);nextEleve();}
+function quitter(){
+  Anim.stop();
+  document.getElementById("exercice").classList.remove("visible");
+  document.getElementById("config").style.display="block";
+  if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+init();
+</script>
 </body>
 </html>
