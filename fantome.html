@@ -160,6 +160,25 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Ari
 .btn-lancer:disabled{background:var(--gris);cursor:not-allowed;opacity:.7;}
 input[type=range]{-webkit-appearance:none;width:150px;height:4px;background:rgba(168,197,218,.3);border-radius:2px;outline:none;cursor:pointer;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;background:rgba(168,197,218,.9);border-radius:50%;box-shadow:0 0 7px rgba(168,197,218,.5);}
+
+/* PL auto mode */
+.ex-auto-bar{width:100%;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 24px 0;flex-wrap:wrap;}
+.btn-auto{font-family:inherit;font-size:.98rem;padding:9px 22px;border:1px solid rgba(255,213,79,.45);border-radius:25px;background:rgba(255,213,79,.08);color:var(--jaune);cursor:pointer;transition:all .22s;white-space:nowrap;letter-spacing:.5px;}
+.btn-auto:hover{background:rgba(255,213,79,.18);box-shadow:0 0 10px rgba(255,213,79,.25);}
+.btn-auto.actif{border-color:var(--rouge);color:var(--rouge);background:rgba(239,83,80,.1);}
+.auto-speed-lbl{color:var(--muted);font-size:.85rem;min-width:72px;text-align:center;}
+#pl-auto-speed{-webkit-appearance:none;width:130px;height:4px;background:rgba(255,213,79,.3);border-radius:2px;outline:none;cursor:pointer;}
+#pl-auto-speed::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--jaune);border-radius:50%;box-shadow:0 0 6px rgba(255,213,79,.5);}
+#pl-ghost{position:fixed;pointer-events:none;z-index:998;transform:translate(-50%,-100%);filter:drop-shadow(0 0 10px rgba(200,230,255,.9));animation:geFloat 2s ease-in-out infinite;display:none;}
+#pl-ghost.plEat{animation:geEat .32s ease forwards;}
+
+/* Mélange options */
+#config-melange{display:none;}
+.mel-grid{display:flex;flex-direction:column;gap:8px;}
+/* Bouton TTS */
+.btn-tts{font-family:inherit;font-size:.82rem;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:20px;background:rgba(255,255,255,.07);color:var(--muted);cursor:pointer;transition:all .2s;margin-top:6px;}
+.btn-tts:hover{border-color:var(--accent);color:var(--text);}
+.btn-tts.on{border-color:var(--vert);color:var(--vert);background:rgba(102,187,106,.1);}
 </style>
 </head>
 <body>
@@ -269,6 +288,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
       </div>
       <div class="alerte" id="alerte-mode"></div>
     </div>
+    <div class="section" id="config-melange">
+      <h2>⚙️ Options mélange</h2>
+      <div class="mel-grid">
+        <button class="mode-btn active" id="mel-btn-simple" onclick="setMelangeMode(false)">🔤 Syllabes simples uniquement (C+V)</button>
+        <button class="mode-btn" id="mel-btn-inv" onclick="setMelangeMode(true)">🔀 Syllabes simples + inversées (C+V et V+C)</button>
+      </div>
+    </div>
     <div class="section" id="config-jeu">
       <h2>🎮 Choisir une animation</h2>
       <div class="jeu-grid">
@@ -296,8 +322,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
       <div class="tour-dots" id="tour-dots"></div>
     </div>
     <div class="ex-meta" id="ex-meta"></div>
+    <button class="btn-tts on" id="btn-tts" onclick="toggleTTS()">🔊 Voix</button>
   </div>
   <div class="ex-center" id="ex-center"><div id="syllabe">—</div></div>
+  <div class="ex-auto-bar">
+    <button class="btn-auto" id="pl-auto-btn" onclick="plToggleAuto()">▶ Auto</button>
+    <input type="range" id="pl-auto-speed" min="1" max="5" value="3" oninput="plUpdateAutoSpeed()">
+    <span class="auto-speed-lbl" id="pl-auto-speed-lbl">Normale</span>
+  </div>
   <div class="ex-footer">
     <button class="btn-action btn-erreur" onclick="repondre(false)">❌ Encore</button>
     <button class="btn-action btn-bravo"  onclick="repondre(true)">✅ Bravo !</button>
@@ -307,6 +339,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
 </div>
 
 <div id="flash-emoji"></div>
+<div id="pl-ghost"><svg width="52" height="60" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="24" cy="22" rx="18" ry="20" fill="rgba(220,235,255,.93)"/><rect x="6" y="22" width="36" height="22" fill="rgba(220,235,255,.93)"/><path d="M6 44 Q10 50 14 44 Q18 50 22 44 Q26 50 30 44 Q34 50 38 44 Q42 50 42 44 L6 44Z" fill="rgba(220,235,255,.93)"/><ellipse cx="17" cy="22" rx="4" ry="5" fill="#1a2a3a"/><ellipse cx="31" cy="22" rx="4" ry="5" fill="#1a2a3a"/><circle cx="18.5" cy="20.5" r="1.5" fill="white" opacity=".85"/><circle cx="32.5" cy="20.5" r="1.5" fill="white" opacity=".85"/><path d="M18 30 Q24 36 30 30" stroke="#1a2a3a" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="24" cy="18" rx="18" ry="20" fill="rgba(180,215,255,.12)"/></svg></div>
 
 <script>
 // ══ NAVIGATION ══
@@ -507,21 +540,21 @@ function renderEleves(){var ct=document.getElementById("eleves-tags");ct.innerHT
 function ajouterEleve(){var inp=document.getElementById("inp-prenom"),v=inp.value.trim();if(!v)return;eleves.push(v.charAt(0).toUpperCase()+v.slice(1));inp.value="";renderEleves();}
 function supprimerEleve(i){eleves.splice(i,1);renderEleves();}
 function changerEtape(){etape=parseInt(document.getElementById("sel-etape").value);localStorage.setItem("piano_etape",etape);var{voy,cons,grp}=getSons(etape);document.getElementById("sons-vus").textContent="Sons disponibles : "+[...voy,...cons,...grp].join(" · ");if(mode!==null)validerMode(mode);updateLancer();}
-function choisirMode(m){mode=m;document.querySelectorAll(".mode-btn").forEach((b,i)=>{b.classList.remove("active","jeu-active");if(i===m)b.classList.add(m===5?"jeu-active":"active");});document.getElementById("config-jeu").style.display=m===5?"block":"none";validerMode(m);updateLancer();}
+function choisirMode(m){mode=m;document.querySelectorAll(".mode-btn").forEach((b,i)=>{b.classList.remove("active","jeu-active");if(i===m)b.classList.add(m===5?"jeu-active":"active");});document.getElementById("config-melange").style.display=m===3?"block":"none";document.getElementById("config-jeu").style.display=m===5?"block":"none";validerMode(m);updateLancer();}
 function validerMode(m){var{cons}=getSons(etape),al=document.getElementById("alerte-mode"),msg="";if((m===2||m===3)&&!cons.length)msg="⚠ Pas encore de consonnes vues.";if(m===4&&!MOTS.filter(x=>x.e<=etape).length)msg="⚠ Pas encore de mots disponibles à cette étape.";al.style.display=msg?"block":"none";al.textContent=msg;}
 function updateLancer(){document.getElementById("btn-lancer").disabled=(!eleves.length||mode===null);}
 function choisirAnim(t){animType=t;var types=["rebond","balade","lettres","assemble","flash"];document.querySelectorAll(".jeu-btn").forEach((b,i)=>b.classList.toggle("active",types[i]===t));}
 function updateSpeedJeu(){animSpeed=parseInt(document.getElementById("speed-jeu").value);var l=["","Très lente","Lente","Normale","Rapide","Très rapide"];document.getElementById("speed-jeu-lbl").textContent=l[animSpeed];}
-function genItems(){var{voy,cons,grp}=getSons(etape),p=PROG[etape];switch(mode){case 0:return["a","e","i","o","u"];case 1:if(p.type==="voy_base")return[...p.son];if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));if(p.type==="voy_comp")return[...p.son,...cons.flatMap(c=>p.son.map(s=>c+s))];if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));return[];case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];case 3:return cons.length?[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))]:[];case 4:return[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];case 5:{var d=cons.flatMap(c=>voy.map(v=>c+v)),gr=grp.flatMap(g=>voy.map(v=>g+v));return[...(d.length?d:p.son),...gr];}}}
+function genItems(){var{voy,cons,grp}=getSons(etape),p=PROG[etape];switch(mode){case 0:return["a","e","i","o","u"];case 1:if(p.type==="voy_base")return[...p.son];if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));if(p.type==="voy_comp")return[...p.son,...cons.flatMap(c=>p.son.map(s=>c+s))];if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));return[];case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];case 3:{if(!cons.length)return[];var dir=[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))];return melangeInverse?[...dir,...voy.flatMap(v=>cons.map(c=>v+c))]:dir;}case 4:return[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];case 5:{var d=cons.flatMap(c=>voy.map(v=>c+v)),gr=grp.flatMap(g=>voy.map(v=>g+v));return[...(d.length?d:p.son),...gr];}}}
 function diviserSyllabe(mot){if(mot.length<=1)return[mot,""];var{cons,grp}=getSons(etape),deb=[...grp,...cons].sort((a,b)=>b.length-a.length);for(var c of deb)if(mot.startsWith(c)&&mot.length>c.length)return[c,mot.slice(c.length)];return[mot[0],mot.slice(1)];}
 function lancer(){pool=genItems();if(!pool.length)return;tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;showView('pl-exercice');if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});nextEleve();}
 function nextEleve(){Anim.stop();if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
-function renderHeader(){document.getElementById("ex-prenom").textContent="👤 "+eleveEnCours;var dots=document.getElementById("tour-dots");dots.innerHTML="";eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};document.getElementById("ex-meta").innerHTML="Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");}
-function afficherItem(){var item=pool[Math.floor(Math.random()*pool.length)];if(mode===5){Anim.run(animType,item,animSpeed);return;}var el=document.getElementById("syllabe");el.classList.add("flash-out");setTimeout(()=>{el.textContent=item;el.classList.remove("flash-out");ajusterTaille(el,item);},130);}
+function renderHeader(){document.getElementById("ex-prenom").textContent="👤 "+eleveEnCours;lireNom(eleveEnCours);var dots=document.getElementById("tour-dots");dots.innerHTML="";eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};document.getElementById("ex-meta").innerHTML="Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");}
+function afficherItem(){var item=pool[Math.floor(Math.random()*pool.length)];if(mode===5&&!plAuto){Anim.run(animType,item,animSpeed);return;}if(mode===5&&plAuto)Anim.stop();var el=document.getElementById("syllabe");el.classList.add("flash-out");setTimeout(()=>{el.textContent=item;el.classList.remove("flash-out");ajusterTaille(el,item);},130);}
 function ajusterTaille(el,txt){var len=txt.length,vw=len<=1?38:len<=2?30:len<=3?22:len<=5?16:len<=7?12:9;el.style.fontSize=vw+"vw";var maxH=window.innerHeight*.52;while(el.offsetHeight>maxH&&vw>5){vw--;el.style.fontSize=vw+"vw";}}
-function repondre(b){tourFait.push(eleveEnCours);var fe=document.getElementById("flash-emoji");fe.textContent=b?"⭐":"💪";fe.classList.add("show");setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);}
-function passerEleve(){tourFait.push(eleveEnCours);nextEleve();}
-function plQuitter(){Anim.stop();if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});showView('pl-config');}
+function repondre(b){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);var fe=document.getElementById("flash-emoji");fe.textContent=b?"⭐":"💪";fe.classList.add("show");setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);}
+function passerEleve(){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);nextEleve();}
+function plQuitter(){plStopAuto();Anim.stop();if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});showView('pl-config');}
 
 const Anim={
   _raf:null,_touts:[],_extra:[],
@@ -537,8 +570,110 @@ const Anim={
 
 function shuffle(arr){for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
 
+
+
+// Mélange
+var melangeInverse=false;
+function setMelangeMode(inv){
+  melangeInverse=inv;
+  document.getElementById('mel-btn-simple').classList.toggle('active',!inv);
+  document.getElementById('mel-btn-inv').classList.toggle('active',inv);
+}
+
+// TTS compatible TNI / Firefox macOS
+var ttsActive=true;
+var _ttsVoices=[];
+function _loadVoices(){
+  _ttsVoices=window.speechSynthesis?speechSynthesis.getVoices():[];
+  if(!_ttsVoices.length&&window.speechSynthesis){
+    speechSynthesis.addEventListener('voiceschanged',function(){_ttsVoices=speechSynthesis.getVoices();},{once:true});
+  }
+}
+function toggleTTS(){
+  ttsActive=!ttsActive;
+  var btn=document.getElementById('btn-tts');
+  btn.textContent=ttsActive?'🔊 Voix':'🔇 Voix';
+  btn.classList.toggle('on',ttsActive);
+}
+function lireNom(nom){
+  if(!ttsActive||!window.speechSynthesis)return;
+  try{
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(nom);
+    u.lang='fr-FR';u.rate=0.88;u.pitch=1;u.volume=1;
+    var parler=function(){
+      if(!_ttsVoices.length)_ttsVoices=speechSynthesis.getVoices();
+      var voix=_ttsVoices.find(function(v){return v.lang==='fr-FR';})
+             ||_ttsVoices.find(function(v){return v.lang.startsWith('fr');});
+      if(voix)u.voice=voix;
+      speechSynthesis.speak(u);
+    };
+    if(speechSynthesis.getVoices().length){_ttsVoices=speechSynthesis.getVoices();parler();}
+    else{speechSynthesis.addEventListener('voiceschanged',function(){_ttsVoices=speechSynthesis.getVoices();parler();},{once:true});}
+  }catch(e){console.warn('TTS:',e);}
+}
+// PL auto
+var plAuto=false,plAutoSpd=3,plAutoTimer=null;
+var PL_DELAYS=[0,4000,2500,1500,850,420];
+var PL_LBLS=['','À peine','À peine','Lente','Lente','Normale','Normale','Rapide','Rapide','Très rapide','Fulgurante'];
+var PL_SLBLS=['','Très lente','Lente','Normale','Rapide','Très rapide'];
+function plUpdateAutoSpeed(){plAutoSpd=parseInt(document.getElementById('pl-auto-speed').value);document.getElementById('pl-auto-speed-lbl').textContent=PL_SLBLS[plAutoSpd];}
+function plToggleAuto(){plAuto?plStopAuto():plStartAuto();}
+function plStartAuto(){
+  plAuto=true;
+  var btn=document.getElementById('pl-auto-btn');
+  btn.textContent='⏸ Stop auto';btn.classList.add('actif');
+  afficherItem();
+  plAutoSchedule();
+}
+function plStopAuto(){
+  plAuto=false;clearTimeout(plAutoTimer);plAutoTimer=null;
+  var g=document.getElementById('pl-ghost');if(g){g.style.display='none';g.classList.remove('plEat');}
+  var syl=document.getElementById('syllabe');if(syl){syl.style.opacity='1';syl.style.transition='';}
+  var btn=document.getElementById('pl-auto-btn');if(btn){btn.textContent='▶ Auto';btn.classList.remove('actif');}
+}
+function plAutoSchedule(){
+  if(!plAuto)return;
+  plAutoTimer=setTimeout(function(){
+    plAnimGhostEat(function(){
+      if(!plAuto)return;
+      tourFait.push(eleveEnCours);
+      if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
+      eleveEnCours=tourRestant.shift();
+      renderHeader();
+      afficherItem();
+      plAutoTimer=setTimeout(plAutoSchedule,550);
+    });
+  },PL_DELAYS[plAutoSpd]);
+}
+function plAnimGhostEat(cb){
+  var ghost=document.getElementById('pl-ghost');
+  var syl=document.getElementById('syllabe');
+  var r=syl.getBoundingClientRect();
+  var cx=r.left+r.width/2,cy=r.top;
+  ghost.classList.remove('plEat');
+  ghost.style.transition='none';
+  ghost.style.left=cx+'px';
+  ghost.style.top='-80px';
+  ghost.style.display='block';
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    ghost.style.transition='top .45s ease-in';
+    ghost.style.top=cy+'px';
+    setTimeout(function(){
+      ghost.classList.remove('plEat');void ghost.offsetWidth;ghost.classList.add('plEat');
+      syl.style.transition='opacity .22s';syl.style.opacity='0';
+      setTimeout(function(){
+        syl.style.opacity='1';syl.style.transition='none';
+        ghost.classList.remove('plEat');
+        ghost.style.transition='top .38s ease-out';
+        ghost.style.top='-80px';
+        setTimeout(function(){ghost.style.display='none';cb();},390);
+      },340);
+    },460);
+  });});
+}
 // ══ INIT ══
-function initAll(){
+function initAll(){_loadVoices();
   GE.init();
   // Piano select
   var sel=document.getElementById("sel-etape");
