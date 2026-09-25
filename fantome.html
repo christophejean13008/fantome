@@ -591,13 +591,17 @@ var CROP=(function(){
     ctx.restore();
     if(sel){
       var n=normSel();
-      ctx.fillStyle='rgba(0,0,0,0.52)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.clearRect(n.x,n.y,n.w,n.h);
-      ctx.strokeStyle='#5c9cff';ctx.lineWidth=2;
-      ctx.setLineDash([7,3]);ctx.strokeRect(n.x,n.y,n.w,n.h);ctx.setLineDash([]);
-      // Poignées de coin
-      var cs=10;ctx.fillStyle='#5c9cff';
+      // 4 zones sombres autour de la sélection — l'intérieur reste transparent
+      ctx.fillStyle='rgba(0,0,0,0.58)';
+      ctx.fillRect(0,0,canvas.width,n.y);                          // haut
+      ctx.fillRect(0,n.y+n.h,canvas.width,canvas.height-n.y-n.h); // bas
+      ctx.fillRect(0,n.y,n.x,n.h);                                 // gauche
+      ctx.fillRect(n.x+n.w,n.y,canvas.width-n.x-n.w,n.h);         // droite
+      // Bordure jaune visible sur fond clair ET sombre
+      ctx.strokeStyle='#ffd54f';ctx.lineWidth=2.5;
+      ctx.setLineDash([8,4]);ctx.strokeRect(n.x+1,n.y+1,n.w-2,n.h-2);ctx.setLineDash([]);
+      // Poignées de coin (carrés jaunes)
+      var cs=14;ctx.fillStyle='#ffd54f';
       [[n.x,n.y],[n.x+n.w-cs,n.y],[n.x,n.y+n.h-cs],[n.x+n.w-cs,n.y+n.h-cs]].forEach(function(p){
         ctx.fillRect(p[0],p[1],cs,cs);
       });
@@ -667,10 +671,82 @@ var CROP=(function(){
   };
 })();
 
+
+function preprocessImageForOCR(canvas){
+  var ctx=canvas.getContext('2d');
+  var w=canvas.width,h=canvas.height;
+
+  // a) Réduire si trop grande (> 1800px) pour accélérer le traitement
+  var MAX=1800;
+  if(w>MAX||h>MAX){
+    var sc=Math.min(MAX/w,MAX/h);
+    var nw=Math.round(w*sc),nh=Math.round(h*sc);
+    var tmp=document.createElement('canvas');
+    tmp.width=nw;tmp.height=nh;
+    tmp.getContext('2d').drawImage(canvas,0,0,nw,nh);
+    canvas.width=nw;canvas.height=nh;
+    ctx=canvas.getContext('2d');
+    ctx.drawImage(tmp,0,0);
+    w=nw;h=nh;
+  }
+
+  var id=ctx.getImageData(0,0,w,h),d=id.data,n=d.length;
+
+  // b) Niveaux de gris (méthode luminosité)
+  for(var i=0;i<n;i+=4){
+    var g=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]);
+    d[i]=d[i+1]=d[i+2]=g;
+  }
+
+  // c) Extension du contraste avec écrêtage 1 %
+  var hist=new Array(256).fill(0);
+  for(var i=0;i<n;i+=4)hist[d[i]]++;
+  var tot=n/4,clip=tot*0.01,cum=0,lo=0,hi=255;
+  for(var v=0;v<256;v++){cum+=hist[v];if(cum>=clip){lo=v;break;}}
+  cum=0;
+  for(var v=255;v>=0;v--){cum+=hist[v];if(cum>=clip){hi=v;break;}}
+  var range=Math.max(1,hi-lo);
+  for(var i=0;i<n;i+=4){
+    var s=Math.min(255,Math.max(0,Math.round((d[i]-lo)*255/range)));
+    d[i]=d[i+1]=d[i+2]=s;
+  }
+  ctx.putImageData(id,0,0);
+
+  // d) Masque de netteté (noyau 3×3 Laplacien + centre)
+  var id2=ctx.getImageData(0,0,w,h),s2=id2.data;
+  var dst=new Uint8ClampedArray(s2.length);
+  for(var y=1;y<h-1;y++){
+    for(var x=1;x<w-1;x++){
+      var i=(y*w+x)*4;
+      var v=Math.min(255,Math.max(0,
+        5*s2[i] - s2[i-4] - s2[i+4] - s2[i-w*4] - s2[i+w*4]
+      ));
+      dst[i]=dst[i+1]=dst[i+2]=v;dst[i+3]=255;
+    }
+  }
+  // Bords inchangés
+  for(var x=0;x<w;x++){
+    var i0=x*4,i1=((h-1)*w+x)*4;
+    dst[i0]=s2[i0];dst[i0+1]=s2[i0+1];dst[i0+2]=s2[i0+2];dst[i0+3]=255;
+    dst[i1]=s2[i1];dst[i1+1]=s2[i1+1];dst[i1+2]=s2[i1+2];dst[i1+3]=255;
+  }
+  for(var y=0;y<h;y++){
+    var i0=(y*w)*4,i1=(y*w+w-1)*4;
+    dst[i0]=s2[i0];dst[i0+1]=s2[i0+1];dst[i0+2]=s2[i0+2];dst[i0+3]=255;
+    dst[i1]=s2[i1];dst[i1+1]=s2[i1+1];dst[i1+2]=s2[i1+2];dst[i1+3]=255;
+  }
+  id2.data.set(dst);ctx.putImageData(id2,0,0);
+}
 function applyCropAndOCR(){
   CROP.apply();
-  document.getElementById('cam-ocr-status').textContent='Application du rognage…';
-  doOCR();
+  var st=document.getElementById('cam-ocr-status');
+  st.textContent='Amélioration de l\'image…';
+  // Laisser le DOM se rafraîchir avant le traitement
+  setTimeout(function(){
+    preprocessImageForOCR(document.getElementById('cam-canvas'));
+    st.textContent='';
+    doOCR();
+  },60);
 }
 function closeCamera(){
   if(cameraStream){cameraStream.getTracks().forEach(function(t){t.stop();});cameraStream=null;}
