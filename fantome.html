@@ -257,7 +257,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
         <label for="lm-file" class="btn import-btn">📂 Importer (.txt)</label>
         <input type="file" id="lm-file" accept=".txt" style="display:none">
         <button class="btn edit-btn" id="lm-edit-btn">✏️ Saisir</button>
-        <button class="btn-camera" onclick="openCamera('lm')">📷 Photo + OCR</button>
         <span class="sons-vus" id="lm-perso-count"></span>
       </div>
       <div id="lm-editor" class="action-bar" style="display:none;flex-direction:column;">
@@ -265,7 +264,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
         <div class="editor-actions"><button class="btn cancel-btn" onclick="document.getElementById('lm-editor').style.display='none'">✖</button><button class="btn confirm-btn" onclick="lmValiderPerso()">✅ OK</button></div>
       </div>
     </div>
-    <button class="btn-lancer" id="lm-btn-lancer" onclick="lancerLM()" disabled>▶ Lancer</button>
+    <div style="text-align:center;margin-bottom:12px;"><button class="btn-camera" onclick="openCamera('lm')">📷 Photo + OCR → importer des mots</button></div>
+<button class="btn-lancer" id="lm-btn-lancer" onclick="lancerLM()" disabled>▶ Lancer</button>
   </div>
 </div>
 
@@ -809,15 +809,17 @@ function useCameraText(){
     var mots=[...new Set(txt.split(/[\s\n,;.!?:""«»()\[\]]+/).map(w=>w.replace(/[^a-zA-ZÀ-ÿ\-]/g,'').trim()).filter(w=>w.length>=1))];
     if(cameraTarget==='lm'){
       lmMotsPerso=mots;
-      lmNiveau='custom';
       lmSetNiv('custom');
-      document.getElementById('lm-perso-count').textContent=mots.length+' mots importés depuis la photo';
+      document.getElementById('lm-perso-count').textContent=mots.length+' mot(s) importés par OCR';
       closeCamera();showView('lm-config');
     } else {
       plMotsPerso=mots;
-      // Ajouter aux mots décodables du mode 4
-      alert(mots.length+' mots ajoutés. Choisissez le mode ⑤ Mots décodables pour les utiliser.');
       closeCamera();
+      showView('pl-config');
+      // Sélectionner automatiquement le mode ⑤ Mots décodables
+      choisirMode(4);
+      document.getElementById('sons-vus').textContent=
+        mots.length+' mot(s) importés par OCR — ajoutés au mode ⑤ Mots décodables';
     }
   }
 }
@@ -968,6 +970,11 @@ var GE=(function(){
       document.getElementById('ge-toggle-btn').textContent='⏸ Pause';
       buildText();
     },
+    load:function(newTxt,label){
+      text=newTxt.trim();
+      document.getElementById('ge-source-name').textContent=label;
+      document.getElementById('ge-clear-btn').style.display='inline-block';
+    },
     stop:function(){running=false;clearTimeout(timer);document.getElementById('ghost-el').style.display='none';},
     quit:function(){
       this.stop();
@@ -1033,7 +1040,7 @@ function validerMode(m){var{cons}=getSons(etape),al=document.getElementById("ale
 function updateLancer(){document.getElementById("btn-lancer").disabled=(!eleves.length||mode===null);}
 function choisirAnim(t){animType=t;var types=["rebond","balade","lettres","assemble","flash"];document.querySelectorAll(".jeu-btn").forEach((b,i)=>b.classList.toggle("active",types[i]===t));}
 function updateSpeedJeu(){animSpeed=parseInt(document.getElementById("speed-jeu").value);var l=["","Très lente","Lente","Normale","Rapide","Très rapide"];document.getElementById("speed-jeu-lbl").textContent=l[animSpeed];}
-function genItems(){var{voy,cons,grp}=getSons(etape),p=PROG[etape];switch(mode){case 0:return["a","e","i","o","u"];case 1:if(p.type==="voy_base")return[...p.son];if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));if(p.type==="voy_comp")return[...p.son,...cons.flatMap(c=>p.son.map(s=>c+s))];if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));return[];case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];case 3:{if(!cons.length)return[];var dir=[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))];return melangeInverse?[...dir,...voy.flatMap(v=>cons.map(c=>v+c))]:dir;}case 4:return[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];case 5:{var d=cons.flatMap(c=>voy.map(v=>c+v)),gr=grp.flatMap(g=>voy.map(v=>g+v));return[...(d.length?d:p.son),...gr];}}}
+function genItems(){var{voy,cons,grp}=getSons(etape),p=PROG[etape];switch(mode){case 0:return["a","e","i","o","u"];case 1:if(p.type==="voy_base")return[...p.son];if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));if(p.type==="voy_comp")return[...p.son,...cons.flatMap(c=>p.son.map(s=>c+s))];if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));return[];case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];case 3:{if(!cons.length)return[];var dir=[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))];return melangeInverse?[...dir,...voy.flatMap(v=>cons.map(c=>v+c))]:dir;}case 4:{var base=[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];return plMotsPerso.length?[...new Set([...base,...plMotsPerso])]:base;}case 5:{var d=cons.flatMap(c=>voy.map(v=>c+v)),gr=grp.flatMap(g=>voy.map(v=>g+v));return[...(d.length?d:p.son),...gr];}}}
 function diviserSyllabe(mot){if(mot.length<=1)return[mot,""];var{cons,grp}=getSons(etape),deb=[...grp,...cons].sort((a,b)=>b.length-a.length);for(var c of deb)if(mot.startsWith(c)&&mot.length>c.length)return[c,mot.slice(c.length)];return[mot[0],mot.slice(1)];}
 function lancer(){pool=genItems();if(!pool.length)return;tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;showView('pl-exercice');if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});nextEleve();}
 function nextEleve(){Anim.stop();if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
