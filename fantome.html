@@ -490,7 +490,7 @@ function ajouterEleveLM(){
   renderEleves();
 }
 function lmUpdateLancer(){
-  document.getElementById('lm-btn-lancer').disabled=(!eleves.length);
+  document.getElementById('lm-btn-lancer').disabled=false;
 }
 function lmValiderPerso(){
   var txt=document.getElementById('lm-textarea').value;
@@ -500,11 +500,10 @@ function lmValiderPerso(){
   lmUpdateLancer();
 }
 function lancerLM(){
-  if(!eleves.length)return;
   currentModule='lm';
   pool=[...lmGetPool()];
   mode=-1; // affichage normal (pas de logique Piano)
-  tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;
+  tourRestant=eleves.length?shuffle([...eleves]):[];tourFait=[];eleveEnCours=null;
   showView('pl-exercice');
   if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});
   nextEleve();
@@ -1037,18 +1036,26 @@ function supprimerEleveLM(i){eleves.splice(i,1);renderEleves();lmUpdateLancer();
 function changerEtape(){etape=parseInt(document.getElementById("sel-etape").value);localStorage.setItem("piano_etape",etape);var{voy,cons,grp}=getSons(etape);document.getElementById("sons-vus").textContent="Sons disponibles : "+[...voy,...cons,...grp].join(" · ");if(mode!==null)validerMode(mode);updateLancer();}
 function choisirMode(m){mode=m;document.querySelectorAll(".mode-btn").forEach((b,i)=>{b.classList.remove("active","jeu-active");if(i===m)b.classList.add(m===5?"jeu-active":"active");});document.getElementById("config-melange").style.display=m===3?"block":"none";document.getElementById("config-jeu").style.display=m===5?"block":"none";validerMode(m);updateLancer();}
 function validerMode(m){var{cons}=getSons(etape),al=document.getElementById("alerte-mode"),msg="";if((m===2||m===3)&&!cons.length)msg="⚠ Pas encore de consonnes vues.";if(m===4&&!MOTS.filter(x=>x.e<=etape).length)msg="⚠ Pas encore de mots disponibles à cette étape.";al.style.display=msg?"block":"none";al.textContent=msg;}
-function updateLancer(){document.getElementById("btn-lancer").disabled=(!eleves.length||mode===null);}
+function updateLancer(){document.getElementById("btn-lancer").disabled=(mode===null);}
 function choisirAnim(t){animType=t;var types=["rebond","balade","lettres","assemble","flash"];document.querySelectorAll(".jeu-btn").forEach((b,i)=>b.classList.toggle("active",types[i]===t));}
 function updateSpeedJeu(){animSpeed=parseInt(document.getElementById("speed-jeu").value);var l=["","Très lente","Lente","Normale","Rapide","Très rapide"];document.getElementById("speed-jeu-lbl").textContent=l[animSpeed];}
 function genItems(){var{voy,cons,grp}=getSons(etape),p=PROG[etape];switch(mode){case 0:return["a","e","i","o","u"];case 1:if(p.type==="voy_base")return[...p.son];if(p.type==="consonne")return p.son.flatMap(c=>voy.map(v=>c+v));if(p.type==="voy_comp")return[...p.son,...cons.flatMap(c=>p.son.map(s=>c+s))];if(p.type==="groupe")return p.son.flatMap(g=>voy.map(v=>g+v));return[];case 2:return cons.length?voy.flatMap(v=>cons.map(c=>v+c)):[];case 3:{if(!cons.length)return[];var dir=[...cons.flatMap(c=>voy.map(v=>c+v)),...grp.flatMap(g=>voy.map(v=>g+v))];return melangeInverse?[...dir,...voy.flatMap(v=>cons.map(c=>v+c))]:dir;}case 4:{var base=[...new Set(MOTS.filter(x=>x.e<=etape).map(x=>x.m))];return plMotsPerso.length?[...new Set([...base,...plMotsPerso])]:base;}case 5:{var d=cons.flatMap(c=>voy.map(v=>c+v)),gr=grp.flatMap(g=>voy.map(v=>g+v));return[...(d.length?d:p.son),...gr];}}}
 function diviserSyllabe(mot){if(mot.length<=1)return[mot,""];var{cons,grp}=getSons(etape),deb=[...grp,...cons].sort((a,b)=>b.length-a.length);for(var c of deb)if(mot.startsWith(c)&&mot.length>c.length)return[c,mot.slice(c.length)];return[mot[0],mot.slice(1)];}
-function lancer(){pool=genItems();if(!pool.length)return;tourRestant=shuffle([...eleves]);tourFait=[];eleveEnCours=null;showView('pl-exercice');if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});nextEleve();}
-function nextEleve(){Anim.stop();if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
-function renderHeader(){document.getElementById("ex-prenom").textContent="👤 "+eleveEnCours;lireNom(eleveEnCours);var dots=document.getElementById("tour-dots");dots.innerHTML="";eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};var meta=currentModule==="lm"?("Lecture de mots — "+lmNivLabels[lmNiveau]):"Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");document.getElementById("ex-meta").innerHTML=meta;}
+function lancer(){pool=genItems();if(!pool.length)return;tourRestant=eleves.length?shuffle([...eleves]):[];tourFait=[];eleveEnCours=null;showView('pl-exercice');if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});nextEleve();}
+function nextEleve(){Anim.stop();
+  if(!eleves.length){eleveEnCours=null;renderHeader();afficherItem();return;}
+  if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
+  eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
+function renderHeader(){
+  var prenom=document.getElementById("ex-prenom");
+  if(eleveEnCours){prenom.textContent="👤 "+eleveEnCours;lireNom(eleveEnCours);}
+  else{prenom.textContent="";}
+  var dots=document.getElementById("tour-dots");dots.innerHTML="";
+  eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};var meta=currentModule==="lm"?("Lecture de mots — "+lmNivLabels[lmNiveau]):"Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");document.getElementById("ex-meta").innerHTML=meta;}
 function afficherItem(){if(plAuto)return;var item=pool[Math.floor(Math.random()*pool.length)];if(mode===5){Anim.run(animType,item,animSpeed);return;}if(mode===-1&&currentModule==='lm'&&animType&&document.getElementById('lm-jeu-toggle')){/* normal display */}var el=document.getElementById("syllabe");el.classList.add("flash-out");setTimeout(()=>{el.textContent=item;el.classList.remove("flash-out");ajusterTaille(el,item);},130);}
 function ajusterTaille(el,txt){var len=txt.length,vw=len<=1?38:len<=2?30:len<=3?22:len<=5?16:len<=7?12:9;el.style.fontSize=vw+"vw";var maxH=window.innerHeight*.52;while(el.offsetHeight>maxH&&vw>5){vw--;el.style.fontSize=vw+"vw";}}
-function repondre(b){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);var fe=document.getElementById("flash-emoji");fe.textContent=b?"⭐":"💪";fe.classList.add("show");setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);}
-function passerEleve(){if(plAuto)plStopAuto();tourFait.push(eleveEnCours);nextEleve();}
+function repondre(b){if(plAuto)plStopAuto();if(eleveEnCours)tourFait.push(eleveEnCours);var fe=document.getElementById("flash-emoji");fe.textContent=b?"⭐":"💪";fe.classList.add("show");setTimeout(()=>{fe.classList.remove("show");nextEleve();},550);}
+function passerEleve(){if(plAuto)plStopAuto();if(eleveEnCours)tourFait.push(eleveEnCours);nextEleve();}
 function plQuitter(){plStopAuto();Anim.stop();if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});showView(currentModule==='lm'?'lm-config':'pl-config');}
 
 const Anim={
@@ -1176,10 +1183,12 @@ function plEatAndNext(){
   if(!plAuto)return;
   plAnimGhostEat(function(){
     if(!plAuto)return;
-    tourFait.push(eleveEnCours);
-    if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
-    eleveEnCours=tourRestant.shift();
-    renderHeader();
+    if(eleves.length){
+      tourFait.push(eleveEnCours);
+      if(!tourRestant.length){tourRestant=shuffle([...eleves]);tourFait=[];}
+      eleveEnCours=tourRestant.shift();
+      renderHeader();
+    }
     plAutoTimer=setTimeout(plAutoCycle,480);
   });
 }
