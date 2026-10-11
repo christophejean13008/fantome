@@ -177,7 +177,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
 #pl-ghost.plEat{animation:geEat .32s ease forwards;}
 
 /* Mélange options */
-#config-melange{display:none;}
+#config-melange{display:block;}
 .mel-grid{display:flex;flex-direction:column;gap:8px;}
 /* Bouton TTS */
 .btn-tts{font-family:inherit;font-size:.82rem;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:20px;background:rgba(255,255,255,.07);color:var(--muted);cursor:pointer;transition:all .2s;margin-top:6px;}
@@ -364,7 +364,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
     <div class="section">
       <h2>🎯 Type d’exercice <button class="btn-jeu-toggle" id="jeu-toggle-btn" onclick="toggleModeJeu()">🎮 Mode jeu</button></h2>
       <div class="modes" id="modes">
-        <button class="mode-btn mode-principal" data-mode="3" onclick="choisirMode(3)">🔀 Mélange de toutes les syllabes vues</button>
+        <button class="mode-btn mode-principal active" data-mode="3" onclick="choisirMode(3)">🔀 Mélange de toutes les syllabes vues</button>
         <button class="mode-btn" data-mode="0" onclick="choisirMode(0)">① Lecture des voyelles (a · e · i · o · u)</button>
         <button class="mode-btn" data-mode="1" onclick="choisirMode(1)">② Syllabes du son étudié aujourd’hui</button>
         <button class="mode-btn" data-mode="2" onclick="choisirMode(2)">③ Syllabes inversées (voyelle + consonne)</button>
@@ -827,7 +827,7 @@ function useCameraText(){
       closeCamera();
       showView('pl-config');
       // Sélectionner automatiquement le mode ⑤ Mots décodables
-      choisirMode(4);
+      choisirMode(3);
       document.getElementById('sons-vus').textContent=
         mots.length+' mot(s) importés par OCR — ajoutés au mode ⑤ Mots décodables';
     }
@@ -1037,7 +1037,7 @@ const MOTS=[
 ];
 let eleves=JSON.parse(localStorage.getItem("piano_eleves")||"[]");
 let etape=parseInt(localStorage.getItem("piano_etape")||"0");
-let mode=null,animType="rebond",animSpeed=3;
+let mode=3,animType="rebond",animSpeed=3;
 var modeJeu=false;
 let pool=[],tourRestant=[],tourFait=[],eleveEnCours=null;
 function getSons(u){var v=[],c=[],g=[];for(var i=0;i<=u;i++){var p=PROG[i];if(p.type==="voy_base"||p.type==="voy_comp")v.push(...p.son);else if(p.type==="consonne")c.push(...p.son);else if(p.type==="groupe")g.push(...p.son);}return{voy:v,cons:c,grp:g};}
