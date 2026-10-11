@@ -217,8 +217,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
     </div>
     <div class="home-card piano" onclick="showView('pl-config')">
       <span class="home-card-icon">🎵</span>
-      <div class="home-card-name">Piano Lecture CP</div>
-      <div class="home-card-desc">Entraînement syllabique — Méthode Piano (Retz) — mode jeu animé</div>
+      <div class="home-card-name">Lecture de Syllabes CP</div>
+      <div class="home-card-desc">Entraînement syllabique — mode jeu animé</div>
     </div>
     <div class="home-card" style="border-color:rgba(129,199,132,.3);" onclick="showView('lm-config')">
       <span class="home-card-icon">📖</span>
@@ -331,7 +331,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
 <div id="pl-config">
   <button class="btn-home" onclick="showView('home')">⬅ Accueil</button>
   <div style="max-width:720px;margin:0 auto;padding:60px 18px 60px;">
-    <div class="pl-title">🎵 Piano Lecture · CP</div>
+    <div class="pl-title">🎵 Lecture de Syllabes · CP</div>
     <div class="section">
       <h2>👥 Élèves de la classe</h2>
       <div class="eleve-row">
@@ -392,7 +392,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
       <div class="tour-dots" id="tour-dots"></div>
     </div>
     <div class="ex-meta" id="ex-meta"></div>
-    <button class="btn-tts on" id="btn-tts" onclick="toggleTTS()">🔊 Voix</button>
+    <button class="btn-tts" id="btn-tts" onclick="toggleTTS()">🔇 Voix</button>
   </div>
   <div class="ex-center" id="ex-center"><div id="syllabe">—</div></div>
   <div class="ex-auto-bar">
@@ -1048,7 +1048,7 @@ function nextEleve(){Anim.stop();
   eleveEnCours=tourRestant.shift();renderHeader();afficherItem();}
 function renderHeader(){
   var prenom=document.getElementById("ex-prenom");
-  if(eleveEnCours){prenom.textContent="👤 "+eleveEnCours;lireNom(eleveEnCours);}
+  if(eleveEnCours){prenom.textContent="👤 "+eleveEnCours;if(ttsActive)lireNom(eleveEnCours);}
   else{prenom.textContent="";}
   var dots=document.getElementById("tour-dots");dots.innerHTML="";
   eleves.forEach(e=>{var d=document.createElement("div");d.className="dot"+(e===eleveEnCours?" current":tourFait.includes(e)?" done":"");dots.appendChild(d);});var ml=["Voyelles","Syllabes du jour","Syllabes inversées","Mélange","Mots","Mode jeu"],al={rebond:"Rebond 🏀",balade:"Balade 🎈",lettres:"Lettre par lettre ✨",assemble:"Assemblage 🧩",flash:"Flash ⚡"};var meta=currentModule==="lm"?("Lecture de mots — "+lmNivLabels[lmNiveau]):"Leçon : <b>"+PROG[etape].label+"</b><br>"+ml[mode]+(mode===5?" · "+al[animType]:"");document.getElementById("ex-meta").innerHTML=meta;}
@@ -1083,7 +1083,7 @@ function setMelangeMode(inv){
 }
 
 // TTS compatible TNI / Firefox macOS
-var ttsActive=true;
+var ttsActive=false;
 var _ttsVoices=[];
 function _loadVoices(){
   _ttsVoices=window.speechSynthesis?speechSynthesis.getVoices():[];
