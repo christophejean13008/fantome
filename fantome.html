@@ -208,6 +208,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
 #crop-canvas{width:100%;cursor:crosshair;touch-action:none;border-radius:10px;background:#000;display:block;}
 .crop-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;}
 .crop-hint{font-size:.8rem;color:var(--muted);font-style:italic;}
+
+/* ═══ HALLOWEEN ═══ */
+#hw-config{display:none;max-width:720px;margin:0 auto;padding:28px 18px 60px;}
+#hw-exercice{display:none;position:fixed;inset:0;background:#06000f;overflow:hidden;touch-action:none;-webkit-touch-callout:none;user-select:none;}
+#hw-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+@keyframes hw-float{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-14px) rotate(5deg);}}
+@keyframes hw-bat{from{left:-80px;}to{left:calc(100vw + 80px);}}
+.hw-bat{position:absolute;pointer-events:none;}
+#hw-target-bar{position:absolute;top:0;left:0;right:52px;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 14px 14px;background:linear-gradient(rgba(6,0,15,.94) 60%,transparent);transition:opacity .6s;}
+#hw-target-label{color:#f9a825;font-weight:700;font-size:.95rem;white-space:nowrap;flex-shrink:0;}
+#hw-target-items{display:flex;gap:8px;flex-wrap:wrap;}
+.hw-chip{background:rgba(249,168,37,.12);border:2px solid rgba(249,168,37,.5);border-radius:10px;padding:3px 12px;color:#f9a825;font-size:1.15rem;font-weight:900;transition:all .3s;}
+.hw-chip.done{background:rgba(102,187,106,.15);border-color:#66bb6a;color:#a5d6a7;text-decoration:line-through;opacity:.65;}
+#hw-btn-quit{position:absolute;top:10px;right:12px;z-index:21;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:50%;width:40px;height:40px;color:#888;font-size:1.1rem;cursor:pointer;line-height:40px;text-align:center;padding:0;font-family:inherit;}
+#hw-arena{position:absolute;inset:0;z-index:2;}
+.hw-item{position:absolute;transform:translate(-50%,-50%);padding:10px 22px;border-radius:16px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);color:#eee;font-weight:900;text-align:center;white-space:nowrap;transition:opacity .35s ease;z-index:3;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.hw-item.flash-off{opacity:0!important;pointer-events:none;}
+.hw-item.found{background:rgba(102,187,106,.28)!important;border-color:#66bb6a!important;color:#c8e6c9!important;box-shadow:0 0 24px rgba(102,187,106,.5)!important;opacity:1!important;pointer-events:none;}
+#hw-found-layer{position:absolute;inset:0;z-index:5;pointer-events:none;}
+@keyframes hw-wrong{0%,100%{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);}50%{background:rgba(229,57,53,.3);border-color:#ef5350;}}
+.hw-item.wrong-fl{animation:hw-wrong .45s;}
+#hw-overlay{position:absolute;inset:0;z-index:4;pointer-events:none;}
+#hw-success{position:absolute;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(6,0,15,.94);}
+#hw-success-ico{font-size:5rem;animation:hw-float 2s ease-in-out infinite;}
+#hw-success-msg{font-size:2.2rem;font-weight:900;color:#f9a825;text-align:center;}
+.hw-sbtn{padding:14px 30px;border-radius:14px;border:none;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;margin:0 6px;}
+.hw-sbtn.prim{background:#f9a825;color:#06000f;}
+.hw-sbtn.sec{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#ccc;}
 </style>
 </head>
 <body>
@@ -231,6 +259,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;heigh
       <span class="home-card-icon">📖</span>
       <div class="home-card-name">Lecture de Mots</div>
       <div class="home-card-desc">Lire des mots par niveau — mêmes animations et mode auto</div>
+    </div>
+    <div class="home-card" style="border-color:rgba(249,168,37,.35);background:linear-gradient(135deg,rgba(30,10,5,.4),rgba(15,5,30,.6));" onclick="showView('hw-config')">
+      <span class="home-card-icon">🎃</span>
+      <div class="home-card-name">La Lumière d’Halloween</div>
+      <div class="home-card-desc">Explore l’obscurité à la lampe torche — lettres, syllabes ou mots</div>
     </div>
   </div>
 </div>
@@ -843,7 +876,7 @@ function downloadCameraText(){
 }
 // ══ NAVIGATION ══
 function showView(id){
-  var views=['home','ge-config','ge-fs','pl-config','pl-exercice','lm-config'];
+  var views=['home','ge-config','ge-fs','pl-config','pl-exercice','lm-config','hw-config','hw-exercice'];
   views.forEach(function(v){
     var el=document.getElementById(v);
     if(!el)return;
@@ -1255,6 +1288,265 @@ function initAll(){_loadVoices();lmUpdateLancer();
   showView('home');
 }
 initAll();
+
+// ══ MODULE HALLOWEEN ══
+var hwContent='lettres',hwFlash=false,hwMulti=false;
+var hwTorchX=200,hwTorchY=300,hwRadius=150;
+var hwTargetWord='',hwTargetWords=[],hwTargetCount=1,hwFoundCount=0,hwFoundTargets=[],hwItemData=[],hwFlashTimers=[];
+var hwActive=false,hwTorchHMouse=null,hwTorchHTouch=null,hwTorchHStart=null;
+
+var HW_POOLS={
+  lettres:['a','e','i','o','u','b','c','d','f','g','l','m','n','p','r','s','t','v','j','z'],
+  syllabes:['ba','be','bi','bo','bu','ca','co','cu','da','de','di','do','fa','fe','fi','fo','ga','ge','la','le','li','lo','lu','ma','me','mi','mo','mu','na','ne','ni','no','pa','pe','pi','po','pu','ra','re','ri','ro','ru','sa','se','si','so','su','ta','te','ti','to','tu','va','ve','vi','vo','vu'],
+  mots:['élève','chat','rat','lune','nuit','fée','bal','sol','bol','lac','bus','fil','riz','cap','jus','bar','cou','pou','mur','roi','feu','jour','tour','four','peur','fleur']
+};
+
+function hwSetContent(t){
+  hwContent=t;
+  ['lettres','syllabes','mots'].forEach(function(x){document.getElementById('hw-btn-'+x).classList.toggle('active',x===t);});
+}
+function hwSetFlash(b){
+  hwFlash=b;
+  document.getElementById('hw-btn-fixe2').classList.toggle('active',!b);
+  document.getElementById('hw-btn-flash2').classList.toggle('active',b);
+}
+function hwSetMulti(b){
+  hwMulti=b;
+  document.getElementById('hw-btn-un2').classList.toggle('active',!b);
+  document.getElementById('hw-btn-multi2').classList.toggle('active',b);
+}
+function hwShuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function hwLancer(){
+  hwActive=true;hwFoundCount=0;hwFoundTargets=[];hwFlashTimers=[];
+  document.getElementById('hw-success').style.display='none';
+  showView('hw-exercice');
+  if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});
+  var pool=hwShuffle(HW_POOLS[hwContent].slice());
+  var items;
+  if(!hwMulti){
+    // 1 seul modèle : 3 copies du même mot + 4 intrus
+    hwTargetWord=pool[0];hwTargetWords=[];hwTargetCount=3;
+    var dists=pool.slice(1,5);
+    items=hwShuffle(
+      Array(3).fill(null).map(function(){return{text:hwTargetWord,isTarget:true};}).concat(
+      dists.map(function(d){return{text:d,isTarget:false};}))
+    );
+  } else {
+    // Plusieurs modèles : 3 mots différents, 1 exemplaire chacun + 4 intrus
+    hwTargetWords=pool.slice(0,3);hwTargetWord='';hwTargetCount=3;
+    var dists=pool.slice(3,7);
+    items=hwShuffle(
+      hwTargetWords.map(function(w){return{text:w,isTarget:true};}).concat(
+      dists.map(function(d){return{text:d,isTarget:false};}))
+    );
+  }
+  hwBuildBg();
+  hwBuildArena(items);
+  hwRenderTargetBar();
+  hwBindTorch();
+  if(hwFlash)hwFlashBarStart();
+}
+
+function hwBuildArena(items){
+  var arena=document.getElementById('hw-arena');arena.innerHTML='';hwItemData=[];document.getElementById('hw-found-layer').innerHTML='';
+  var W=window.innerWidth,H=window.innerHeight;
+  var sz={lettres:'4.5rem',syllabes:'3.2rem',mots:'2.2rem'}[hwContent];
+  var positions=hwGenPositions(items.length,W,H,90,110);
+  items.forEach(function(item,i){
+    var el=document.createElement('div');
+    el.className='hw-item';
+    el.textContent=item.text;
+    el.style.left=positions[i].x+'px';
+    el.style.top=positions[i].y+'px';
+    el.style.fontSize=sz;
+    arena.appendChild(el);
+    var data={el:el,text:item.text,isTarget:item.isTarget,x:positions[i].x,y:positions[i].y,found:false};
+    hwItemData.push(data);
+    el.addEventListener('touchstart',function(e){e.stopPropagation();hwTapItem(data);},{passive:true});
+    el.addEventListener('mousedown',function(e){e.stopPropagation();hwTapItem(data);});
+  });
+}
+
+function hwGenPositions(n,W,H,mg,top){
+  var pos=[],minD=Math.max(130,W/8);
+  for(var i=0;i<n;i++){
+    var p,t=0;
+    do{p={x:mg+Math.random()*(W-2*mg),y:top+Math.random()*(H-top-mg)};t++;}
+    while(t<200&&pos.some(function(q){return Math.hypot(q.x-p.x,q.y-p.y)<minD;}));
+    pos.push(p);
+  }
+  return pos;
+}
+
+function hwFlashBarStart(){
+  // La barre cible est visible, on la cache après 2s
+  var bar=document.getElementById('hw-target-bar');
+  bar.style.transition='opacity .6s';
+  bar.style.opacity='1';
+  var id=setTimeout(function(){
+    if(!hwActive)return;
+    bar.style.opacity='0';
+  },2000);
+  hwFlashTimers.push(id);
+}
+function hwFlashShowBar(){
+  // Montre brièvement la barre (après chaque trouvaille en mode flash)
+  if(!hwFlash)return;
+  var bar=document.getElementById('hw-target-bar');
+  bar.style.transition='opacity .25s';
+  bar.style.opacity='1';
+  hwFlashTimers.forEach(clearTimeout);hwFlashTimers=[];
+  var id=setTimeout(function(){
+    if(!hwActive)return;
+    bar.style.transition='opacity .6s';
+    bar.style.opacity='0';
+  },1500);
+  hwFlashTimers.push(id);
+}
+
+function hwTapItem(data){
+  if(!hwActive||data.found)return;
+  var dx=data.x-hwTorchX,dy=data.y-hwTorchY;
+  if(Math.hypot(dx,dy)>hwRadius+50)return;
+  if(data.isTarget){
+    data.found=true;data.el.classList.add('found');document.getElementById('hw-found-layer').appendChild(data.el);
+    hwFoundCount++;if(hwMulti)hwFoundTargets.push(data.text);hwRenderTargetBar();if(hwFlash)hwFlashShowBar();hwCheckWin();
+  } else {
+    if(!data.el.classList.contains('wrong-fl')){
+      data.el.classList.add('wrong-fl');
+      setTimeout(function(){data.el.classList.remove('wrong-fl');},460);
+    }
+  }
+}
+function hwCheckWin(){
+  if(hwFoundCount>=hwTargetCount){
+    hwActive=false;hwFlashTimers.forEach(clearTimeout);
+    setTimeout(function(){document.getElementById('hw-success').style.display='flex';},400);
+  }
+}
+function hwRenderTargetBar(){
+  var bar=document.getElementById('hw-target-bar');
+  if(!hwFlash){bar.style.opacity='1';}
+  var el=document.getElementById('hw-target-items');
+  var chips='';
+  if(!hwMulti){
+    // 1 seul modèle : 1 puce + compteur de copies trouvées
+    chips='<div class="hw-chip'+(hwFoundCount>=hwTargetCount?' done':'')+'">'+hwTargetWord+'</div>';
+    chips+='<span style="color:#f9a825;font-size:.9rem;margin-left:4px;opacity:.85;">'+hwFoundCount+' / '+hwTargetCount+'</span>';
+  } else {
+    // Plusieurs modèles : 1 puce par mot cible
+    hwTargetWords.forEach(function(w){
+      var done=hwFoundTargets.indexOf(w)>=0;
+      chips+='<div class="hw-chip'+(done?' done':'')+'">'+w+'</div>';
+    });
+  }
+  el.innerHTML=chips;
+}
+
+function hwUpdateTorch(x,y){
+  hwTorchX=x;hwTorchY=y;
+  var ov=document.getElementById('hw-overlay');
+  var r=hwRadius;
+  ov.style.background='radial-gradient(circle '+r+'px at '+x+'px '+y+'px,rgba(255,210,80,.05) 0%,rgba(255,180,50,.02) '+Math.round(r*.55)+'px,rgba(6,0,15,.97) '+Math.round(r+18)+'px)';
+}
+function hwBindTorch(){
+  var ex=document.getElementById('hw-exercice');
+  if(hwTorchHMouse)ex.removeEventListener('mousemove',hwTorchHMouse);
+  if(hwTorchHTouch)ex.removeEventListener('touchmove',hwTorchHTouch);
+  if(hwTorchHStart)ex.removeEventListener('touchstart',hwTorchHStart);
+  hwTorchHMouse=function(e){hwUpdateTorch(e.clientX,e.clientY);};
+  hwTorchHTouch=function(e){if(e.cancelable)e.preventDefault();var t=e.touches[0];if(t)hwUpdateTorch(t.clientX,t.clientY);};
+  hwTorchHStart=function(e){var t=e.touches[0];if(t)hwUpdateTorch(t.clientX,t.clientY);};
+  ex.addEventListener('mousemove',hwTorchHMouse);
+  ex.addEventListener('touchmove',hwTorchHTouch,{passive:false});
+  ex.addEventListener('touchstart',hwTorchHStart,{passive:true});
+  hwUpdateTorch(window.innerWidth/2,window.innerHeight*.55);
+}
+
+function hwBuildBg(){
+  var bg=document.getElementById('hw-bg');bg.innerHTML='';
+  var decos=[
+    {e:'🎃',css:'position:absolute;bottom:8px;left:20px;font-size:4rem;animation:hw-float 3s ease-in-out infinite;'},
+    {e:'🎃',css:'position:absolute;bottom:8px;right:25px;font-size:3rem;animation:hw-float 4s ease-in-out infinite;animation-delay:1.2s;'},
+    {e:'🌕',css:'position:absolute;top:55px;right:35px;font-size:4.5rem;opacity:.55;'},
+    {e:'🕸️',css:'position:absolute;top:40px;left:-8px;font-size:5rem;opacity:.38;'},
+    {e:'🕷️',css:'position:absolute;top:145px;left:55px;font-size:1.6rem;opacity:.45;'},
+    {e:'⛰️',css:'position:absolute;bottom:0;left:50%;font-size:2.2rem;opacity:.2;transform:translateX(-50%);'},
+  ];
+  decos.forEach(function(d){
+    var el=document.createElement('div');el.textContent=d.e;el.style.cssText=d.css;bg.appendChild(el);
+  });
+  for(var i=0;i<5;i++){
+    var bat=document.createElement('div');
+    bat.className='hw-bat';bat.textContent='🦇';
+    var dur=(7+Math.random()*9).toFixed(1),top=(8+Math.random()*45).toFixed(0),sz=(1.2+Math.random()*.8).toFixed(1);
+    bat.style.cssText='top:'+top+'%;font-size:'+sz+'rem;animation:hw-bat '+dur+'s linear infinite;animation-delay:'+(Math.random()*8).toFixed(1)+'s;opacity:'+(0.5+Math.random()*.3).toFixed(2)+';';
+    bg.appendChild(bat);
+  }
+}
+
+function hwRejouer(){document.getElementById('hw-success').style.display='none';hwLancer();}
+function hwQuitter(){
+  hwActive=false;hwFlashTimers.forEach(clearTimeout);
+  document.getElementById('hw-success').style.display='none';
+  if(document.exitFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(function(){});
+  showView('hw-config');
+}
+
 </script>
+
+<!-- ═══ HALLOWEEN CONFIG ═══ -->
+<div id="hw-config">
+  <button class="btn-home" onclick="showView('home')">⬅ Accueil</button>
+  <div class="module-header"><h1>🎃 La Lumière d’Halloween</h1><p class="module-sub">Explore l’obscurité à la lampe torche pour trouver les modèles cachés</p></div>
+  <div class="section">
+    <h2>📝 Type de contenu</h2>
+    <div class="mel-grid">
+      <button class="mode-btn active" id="hw-btn-lettres" onclick="hwSetContent('lettres')">🔤 Lettres</button>
+      <button class="mode-btn" id="hw-btn-syllabes" onclick="hwSetContent('syllabes')">📖 Syllabes</button>
+      <button class="mode-btn" id="hw-btn-mots" onclick="hwSetContent('mots')">💬 Mots simples</button>
+    </div>
+  </div>
+  <div class="section">
+    <h2>💡 Mode d’affichage</h2>
+    <div class="mel-grid">
+      <button class="mode-btn active" id="hw-btn-fixe2" onclick="hwSetFlash(false)">🔦 Toujours visible dans la lumière</button>
+      <button class="mode-btn" id="hw-btn-flash2" onclick="hwSetFlash(true)">⚡ Apparaît 2 sec puis disparaît</button>
+    </div>
+  </div>
+  <div class="section" id="hw-multi-section">
+    <h2>🎯 Nombre de cibles</h2>
+    <div class="mel-grid">
+      <button class="mode-btn active" id="hw-btn-un2" onclick="hwSetMulti(false)">① 1 seul modèle à trouver</button>
+      <button class="mode-btn" id="hw-btn-multi2" onclick="hwSetMulti(true)">🔢 Plusieurs modèles + intrus</button>
+    </div>
+  </div>
+  <div style="padding:24px 0 0;text-align:center;">
+    <button class="btn-lancer" onclick="hwLancer()">🎃 Entrer dans l’obscurité</button>
+  </div>
+</div>
+
+<!-- ═══ HALLOWEEN EXERCICE ═══ -->
+<div id="hw-exercice">
+  <div id="hw-bg"></div>
+  <div id="hw-target-bar">
+    <span id="hw-target-label">🔍 Trouve :</span>
+    <div id="hw-target-items"></div>
+  </div>
+  <button id="hw-btn-quit" onclick="hwQuitter()">✕</button>
+  <div id="hw-arena"></div>
+  <div id="hw-overlay"></div>
+  <div id="hw-found-layer"></div>
+  <div id="hw-success">
+    <div id="hw-success-ico">🎃</div>
+    <div id="hw-success-msg">Bravo !</div>
+    <div style="display:flex;gap:14px;margin-top:8px;">
+      <button class="hw-sbtn prim" onclick="hwRejouer()">🔄 Rejouer</button>
+      <button class="hw-sbtn sec" onclick="hwQuitter()">⬅ Quitter</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
